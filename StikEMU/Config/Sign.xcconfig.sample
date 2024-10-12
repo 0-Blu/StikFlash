@@ -1,0 +1,5 @@
+DEVELOPMENT_TEAM = EU74F4WL9R
+ORG_IDENTIFIER = ny
+
+// If you hsve a paid account
+CODE_SIGN_IDENTITY = Apple Development
