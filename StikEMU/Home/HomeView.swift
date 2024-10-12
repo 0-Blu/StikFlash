@@ -98,6 +98,7 @@ struct HomeView: View {
             .navigationBarHidden(true)
             .onAppear(perform: loadImportedFiles)
         }
+        .navigationViewStyle(StackNavigationViewStyle())
     }
 
     // File import handling logic

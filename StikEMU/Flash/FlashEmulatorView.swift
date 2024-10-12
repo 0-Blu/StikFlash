@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import WebKit
+import Combine
 import GameController
 
 struct JoystickView: View {
@@ -98,10 +100,6 @@ struct JoystickView: View {
         }
     }
 }
-import SwiftUI
-import WebKit
-import Combine
-import GameController
 
 struct FlashEmulatorView: View {
     @StateObject private var flashServer = FlashEmulatorServer()
@@ -109,19 +107,10 @@ struct FlashEmulatorView: View {
     @State private var lastSentDirection: Set<String> = []
     @Binding var selectedFile: URL?
     
-    // State to keep track of pressed keys
     @State private var pressedKeys: Set<String> = []
-    
-    // Timer for continuous keypress
     @State private var inputTimer: Timer?
-    
-    // State for connected controllers
     @State private var controller: GCController?
-    
-    // State to show the settings modal
     @State private var showingSettings = false
-    
-    // Key bind state
     @State private var keyBindings: [String: String] = [
         "up": "ArrowUp",
         "down": "ArrowDown",
@@ -130,41 +119,45 @@ struct FlashEmulatorView: View {
         "space": "Space"
     ]
     
+    @State private var showControls = true // New state to toggle UI controls visibility
+    @Environment(\.verticalSizeClass) var verticalSizeClass
+    
     var body: some View {
         NavigationView {
             GeometryReader { geometry in
                 VStack(spacing: 0) {
-                    // Game content moved closer to the top
+                    // Game content
                     WebView(url: URL(string: "http://localhost:\(flashServer.port)")!, webView: $webView)
-                        .frame(width: geometry.size.width, height: geometry.size.height * 0.7)
+                        .frame(width: geometry.size.width, height: verticalSizeClass == .regular ? geometry.size.height * 0.7 : geometry.size.height * 0.9)
                         .onChange(of: selectedFile) { newFile in
                             if let file = newFile {
                                 loadFile(fileURL: file)
                             }
                         }
                     
-                    Spacer()
-                    
-                    // Control Panel at the bottom
-                    HStack(spacing: 50) {
-                        // Joystick
-                        JoystickView(onMove: { angle, magnitude in
-                            handleJoystickMove(angle: angle, magnitude: magnitude)
-                        }, onRelease: {
-                            handleJoystickRelease()
-                        })
-                        .frame(width: 160, height: 160)
-                        .padding()
+                    // Conditionally show UI controls based on the toggle state
+                    if verticalSizeClass == .regular && showControls {
+                        Spacer() // Keep this only in portrait mode
                         
-                        // Space Bar Button
-                        SpaceBarButton(onPress: {
-                            pressSpaceBar()
-                        }, onRelease: {
-                            releaseSpaceBar()
-                        }, spaceKeyBind: keyBindings["space"] ?? "Space") // Pass the space key binding
-                        .frame(width: 120, height: 60)
+                        HStack(spacing: 50) {
+                            JoystickView(onMove: { angle, magnitude in
+                                handleJoystickMove(angle: angle, magnitude: magnitude)
+                            }, onRelease: {
+                                handleJoystickRelease()
+                            })
+                            .frame(width: 160, height: 160)
+                            .padding()
+                            
+                            SpaceBarButton(onPress: {
+                                pressSpaceBar()
+                            }, onRelease: {
+                                releaseSpaceBar()
+                            }, spaceKeyBind: keyBindings["space"] ?? "Space")
+                            .frame(width: 120, height: 60)
+                        }
+                        .padding(.bottom, 40)
+                    } else {
                     }
-                    .padding(.bottom, 40)
                 }
             }
             .onAppear {
@@ -183,20 +176,27 @@ struct FlashEmulatorView: View {
                 Image(systemName: "gearshape.fill")
             })
             .sheet(isPresented: $showingSettings) {
-                SettingsView(keyBindings: $keyBindings)
+                SettingsView(keyBindings: $keyBindings, showControls: $showControls) // Pass showControls binding to settings
             }
         }
+        .navigationViewStyle(StackNavigationViewStyle())
     }
-    
+
     // MARK: - SettingsView
     struct SettingsView: View {
         @Binding var keyBindings: [String: String]
+        @Binding var showControls: Bool // New binding to control UI controls visibility
         
         var body: some View {
             VStack {
-                Text("Change Key Binds")
+                Text("Settings")
                     .font(.headline)
                     .padding()
+                
+                Toggle(isOn: $showControls) {
+                    Text("Show UI Controls")
+                }
+                .padding()
                 
                 HStack {
                     Text("Up:")
@@ -234,19 +234,13 @@ struct FlashEmulatorView: View {
             .padding()
         }
         
-        // Function to create a Binding for a specific key in the dictionary
         private func binding(for key: String) -> Binding<String> {
             Binding<String>(
-                get: {
-                    keyBindings[key] ?? "" // Return the value for the key, or empty string if not found
-                },
-                set: { newValue in
-                    keyBindings[key] = newValue // Update the value in the dictionary
-                }
+                get: { keyBindings[key] ?? "" },
+                set: { newValue in keyBindings[key] = newValue }
             )
         }
     }
-    
     // MARK: - Loading Selected File
     private func loadFile(fileURL: URL) {
         // Modify the server to serve the selected file
