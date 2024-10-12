@@ -119,7 +119,7 @@ struct FlashEmulatorView: View {
         "space": "Space"
     ]
     
-    @State private var showControls = true // New state to toggle UI controls visibility
+    @State private var showControls = true
     @Environment(\.verticalSizeClass) var verticalSizeClass
     
     var body: some View {
@@ -128,7 +128,7 @@ struct FlashEmulatorView: View {
                 VStack(spacing: 0) {
                     // Game content
                     WebView(url: URL(string: "http://localhost:\(flashServer.port)")!, webView: $webView)
-                        .frame(width: geometry.size.width, height: verticalSizeClass == .regular ? geometry.size.height * 0.7 : geometry.size.height * 0.9)
+                        .frame(width: geometry.size.width, height: verticalSizeClass == .regular ? geometry.size.height * 0.7 : geometry.size.height) // Full height in landscape mode
                         .onChange(of: selectedFile) { newFile in
                             if let file = newFile {
                                 loadFile(fileURL: file)
@@ -157,6 +157,7 @@ struct FlashEmulatorView: View {
                         }
                         .padding(.bottom, 40)
                     } else {
+                        Spacer(minLength: 0) // No excess space in landscape mode
                     }
                 }
             }
@@ -176,8 +177,9 @@ struct FlashEmulatorView: View {
                 Image(systemName: "gearshape.fill")
             })
             .sheet(isPresented: $showingSettings) {
-                SettingsView(keyBindings: $keyBindings, showControls: $showControls) // Pass showControls binding to settings
+                SettingsView(keyBindings: $keyBindings, showControls: $showControls)
             }
+            .navigationBarHidden(verticalSizeClass == .compact) // Hide the navigation bar in landscape mode
         }
         .navigationViewStyle(StackNavigationViewStyle())
     }
