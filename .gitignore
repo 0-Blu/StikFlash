@@ -1,0 +1,63 @@
+# macOS
+.DS_Store
+
+# Swift Package Manager
+/.build/
+/Packages
+/Package.resolved
+
+# Xcode
+DerivedData/
+*.xcworkspace
+*.xccheckout
+*.xcscmblueprint
+
+# iOS
+Pods/
+!Podfile
+!Podfile.lock
+
+# Carthage
+Carthage/Build/
+Carthage/Checkouts/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# CocoaPods
+*.lock
+Pods/
+
+# Temporary files
+*.tmp
+*.swp
+
+# SwiftPM binary artifacts
+/.swiftpm/xcode/package-binary-artifacts
+
+# Logs
+*.log
+
+# User-specific Xcode files
+xcuserdata/
+*.xcuserstate
+
+# Playground support files
+timeline.xctimeline
+playground.xcworkspace
+
+# Build files
+build/
+*.dSYM
+*.ipa
+*.app
+*.xcarchive
+
+# Xcode generated files
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata
+!*.xcodeproj/xcshareddata/*
