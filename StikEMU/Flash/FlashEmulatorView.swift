@@ -111,6 +111,7 @@ struct FlashEmulatorView: View {
     @State private var inputTimer: Timer?
     @State private var controller: GCController?
     @State private var showingSettings = false
+    @State private var showingHomeViewPopover = false // New state for showing the HomeView popover
     @State private var keyBindings: [String: String] = [
         "up": "ArrowUp",
         "down": "ArrowDown",
@@ -171,14 +172,30 @@ struct FlashEmulatorView: View {
                 releaseAllKeys()
                 releaseSpaceBar()
             }
-            .navigationBarItems(trailing: Button(action: {
-                showingSettings = true
-            }) {
-                Image(systemName: "gearshape.fill")
-            })
-            .sheet(isPresented: $showingSettings) {
-                SettingsView(keyBindings: $keyBindings, showControls: $showControls)
-            }
+            .navigationBarItems(
+                trailing: HStack {
+                    // First button for settings
+                    Button(action: {
+                        showingSettings = true
+                    }) {
+                        Image(systemName: "gearshape.fill")
+                    }
+                    .sheet(isPresented: $showingSettings) {
+                        SettingsView(keyBindings: $keyBindings, showControls: $showControls)
+                    }
+
+                    // Second button for HomeView popover
+                    Button(action: {
+                        showingHomeViewPopover = true
+                    }) {
+                        Image(systemName: "plus.circle")
+                    }
+                    .popover(isPresented: $showingHomeViewPopover) {
+                        HomeView(selectedFile: $selectedFile, isPresented: $showingHomeViewPopover) // Pass both bindings
+                            .frame(width: 300, height: 400) // Adjust the size of the popover
+                    }
+                }
+            )
             .navigationBarHidden(verticalSizeClass == .compact) // Hide the navigation bar in landscape mode
         }
         .navigationViewStyle(StackNavigationViewStyle())

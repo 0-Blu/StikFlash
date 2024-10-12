@@ -12,6 +12,7 @@ import UniformTypeIdentifiers
 class FlashEmulatorServer: ObservableObject {
     let server = HttpServer()
     private var currentFile: URL? = nil
+    private var savedGameData: Data? = nil  // Variable to hold saved game data
     var port: UInt16 = 8080  // Changed from 'private' to 'internal' (default)
 
     init() {
@@ -22,7 +23,6 @@ class FlashEmulatorServer: ObservableObject {
 
     func start() {
         do {
-            // Start the server on a randomized port with IPv4
             try server.start(port, forceIPv4: true)
             print("Server has started on localhost (port = \(port))")
         } catch {
@@ -45,6 +45,9 @@ class FlashEmulatorServer: ObservableObject {
             return .ok(.html(self?.createHTML() ?? ""))
         }
 
+        // Routes for saving and loading game data
+        setupGameDataRoutes()
+
         // Default file route
         setupFileRoutes()
     }
@@ -64,6 +67,31 @@ class FlashEmulatorServer: ObservableObject {
                 print("Error loading file: \(error.localizedDescription)")
                 return .notFound
             }
+        }
+    }
+
+    // Setup routes for saving and loading game data
+    private func setupGameDataRoutes() {
+        // Save game data (POST request)
+        server["/save"] = { [weak self] request in
+            guard let self = self else { return .internalServerError }
+            
+            // Directly use request.body
+            let body = request.body
+            self.savedGameData = Data(body)
+            
+            print("Game data saved: \(String(data: self.savedGameData!, encoding: .utf8) ?? "Error decoding data")")
+            return .ok(.text("Game data saved successfully"))
+        }
+
+        // Load game data (GET request)
+        server["/load"] = { [weak self] request in
+            guard let self = self, let savedGameData = self.savedGameData else {
+                return .notFound
+            }
+            return .raw(200, "application/json", [:], { writer in
+                try writer.write(savedGameData)
+            })
         }
     }
 
@@ -135,6 +163,25 @@ class FlashEmulatorServer: ObservableObject {
                         console.log('Key pressed (keyup):', event.key, event.keyCode, event.code);
                     });
                 });
+
+                // Functions to save and load game data
+                function saveGameData(data) {
+                    fetch("http://localhost:\(port)/save", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    }).then(response => response.text())
+                      .then(text => console.log(text));
+                }
+
+                function loadGameData() {
+                    fetch("http://localhost:\(port)/load")
+                      .then(response => response.json())
+                      .then(data => {
+                          console.log("Loaded game data:", data);
+                          // Do something with the loaded game data
+                      });
+                }
             </script>
         </body>
         </html>
