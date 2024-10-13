@@ -6,6 +6,9 @@ Welcome to **StikEMU**, a work-in-progress multi-emulator platform that currentl
 - **Flash Core**: Play your favorite Flash games and apps using this integrated core.
 - **On-Device Web Server**: StikEMU uses an on-device web server to load Flash files. To keep things secure, only your device can connect to the server due to added security measures. 🔒
 
+## Contributors
+Credit to **nythepegasus** for adding xcconfigs
+
 ## License
 This project is licensed under the **AGPLv3**. You can find the full license text in the `LICENSE` file or [here](https://www.gnu.org/licenses/agpl-3.0.html).
 
