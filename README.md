@@ -10,15 +10,15 @@ Welcome to **StikEMU**, a work-in-progress multi-emulator platform that currentl
 Credit to **nythepegasus** for adding xcconfigs
 
 ## License
-This project is licensed under the **AGPLv3**. You can find the full license text in the `LICENSE` file or [here](https://www.gnu.org/licenses/agpl-3.0.html).
+This project is licensed under the **AGPLv3**. You can find the full license text in the `LICENSE` file.
 
 ## How to Use
-1. Download the latest release from the [Releases](#) section.
+1. Download the latest release from the [Releases](https://github.com/0-Blu/StikEMU/releases) section.
 2. Follow the setup instructions included in the documentation.
 3. Test out the Flash core and report any issues.
 
 ## Feedback
-Your feedback is crucial for improving StikEMU! Feel free to [submit issues](#) or contact me directly with any thoughts or problems you encounter.
+Your feedback is crucial for improving StikEMU! Feel free to [submit issues](https://github.com/0-Blu/StikEMU/issues).
 
 ---
 
