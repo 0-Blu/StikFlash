@@ -1,6 +1,7 @@
 # StikEMU - Work in Progress (WIP)
 
 Welcome to **StikEMU**, a work-in-progress multi-emulator platform that currently introduces the **Flash core**! 🎉 
+This multi-emulator includes an on-device web server for loading Flash files. Rest assured, only your device should be able to connect to the server due to added security measures. 🔒
 
 ## Features
 - **Flash Core**: Play your favorite Flash games and apps using this integrated core.
