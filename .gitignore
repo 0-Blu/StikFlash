@@ -61,3 +61,4 @@ build/
 !*.xcodeproj/project.pbxproj
 !*.xcodeproj/xcshareddata
 !*.xcodeproj/xcshareddata/*
+.DS_Store
