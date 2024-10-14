@@ -26,7 +26,7 @@ This project is licensed under the **AGPLv3**. You can find the full license tex
 ## How to Install
 ### Method 1
 1. Download and install [SideStore.](https://sidestore.io)
-2. Add our source: https://0-blu.github.io/StikFlash/source.json
+2. Add our source: https://0-blu.github.io/StikFlash/source.json.
 3. Load your Flash games, and enjoy the nostalgia!
 
 ### Method 2
