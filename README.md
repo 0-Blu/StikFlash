@@ -1,26 +1,26 @@
-# StikEMU - Work in Progress (WIP)
+# StikFlash - Work in Progress (WIP)
 
-Welcome to **StikEMU**, a work-in-progress multi-emulator platform that currently introduces the **Flash core**! 🎉 
-This multi-emulator includes an on-device web server for loading Flash files. Rest assured, only your device should be able to connect to the server due to added security measures. 🔒
+Welcome to **StikFlash**, a work-in-progress Flash emulator that runs the **Ruffle Flash emulator** fully on your device! 🎉 With StikFlash, you can relive your favorite Flash games and apps in a secure, fast, and device-exclusive environment.
+
+**Note**: StikFlash does not directly contain any Ruffle code. It utilizes Ruffle as an external library to power Flash emulation on iOS devices.
 
 ## Features
-- **Flash Core**: Play your favorite Flash games and apps using this integrated core.
-- **On-Device Web Server**: StikEMU uses an on-device web server to load Flash files. To keep things secure, only your device can connect to the server due to added security measures. 🔒
+- **Ruffle Flash Emulator Fully on Device**: StikFlash runs the Ruffle Flash emulator directly on your iOS device, using a built-in, secure web server. Flash files are pulled/downloaded from [Ruffle's official source](https://unpkg.com/@ruffle-rs/ruffle) to ensure private and seamless gameplay, with all operations happening entirely on your device. 🔒
 
 ## Contributors
-Credit to **nythepegasus** for adding xcconfigs
+Credit to **nythepegasus** for adding xcconfigs.
 
 ## License
 This project is licensed under the **AGPLv3**. You can find the full license text in the `LICENSE` file.
 
 ## How to Use
 1. Download the latest release from the [Releases](https://github.com/0-Blu/StikEMU/releases) section.
-2. Follow the setup instructions included in the documentation.
-3. Test out the Flash core and report any issues.
+2. Follow the setup instructions provided.
+3. Load your Flash games, and enjoy the nostalgia!
 
 ## Feedback
-Your feedback is crucial for improving StikEMU! Feel free to [submit issues](https://github.com/0-Blu/StikEMU/issues).
+Your feedback helps us improve StikFlash! Please [submit any issues](https://github.com/0-Blu/StikEMU/issues).
 
 ---
 
-**Thank you for trying out StikEMU!** 🙌
+**Thank you for trying out StikFlash!** 🙌
