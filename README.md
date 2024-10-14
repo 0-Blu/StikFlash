@@ -8,8 +8,8 @@ Welcome to **StikFlash**, a work-in-progress Flash emulator that runs the **Ruff
 - You cannot sign the ipa with an enterprise cert because the file importer will not work.
 - Make sure low power mode is off. Having it on will greatly reduce performance.
 
-## Features
-- **Ruffle Flash Emulator Fully on Device**: StikFlash runs the Ruffle Flash emulator directly on your iOS device, using a built-in, secure web server. Flash files are pulled/downloaded from [Ruffle's official source](https://unpkg.com/@ruffle-rs/ruffle) to ensure private and seamless gameplay, with all operations happening entirely on your device. 🔒
+## How It Works
+- **Ruffle Flash Emulator Fully on Device**: StikFlash runs the Ruffle Flash emulator directly on your iOS device, using a built-in, secure web server. Flash files are pulled/downloaded from [Ruffle's official source](https://unpkg.com/@ruffle-rs/ruffle) to ensure private and seamless gameplay, with all operations happening entirely on your device. Only your device can connect to the web server, which uses a random port each time to increase security. 🔒
 
 ## Compatibility
 See the `Compatibility.md` file.
