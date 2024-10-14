@@ -40,11 +40,10 @@ class FlashEmulatorServer: ObservableObject {
         
         setupRoutes()
         addLocalhostMiddleware()
-        
     }
 
     deinit {
-        
+        stop()
     }
 
     func start() {
@@ -89,7 +88,14 @@ class FlashEmulatorServer: ObservableObject {
 
     private func setupRoutes() {
         server["/"] = { [weak self] request in
-            return .ok(.html(self?.createHTML() ?? ""))
+            guard let self = self else { return .notFound }
+            if let _ = self.currentFile {
+                // Serve the Flash-based HTML
+                return .ok(.html(self.createFlashHTML()))
+            } else {
+                // Serve the simple clicker game HTML
+                return .ok(.html(self.createClickerHTML()))
+            }
         }
         setupGameDataRoutes()
         setupFileRoutes()
@@ -137,7 +143,7 @@ class FlashEmulatorServer: ObservableObject {
         }
     }
 
-    private func createHTML() -> String {
+    private func createFlashHTML() -> String {
         """
         <!DOCTYPE html>
         <html>
@@ -243,6 +249,97 @@ class FlashEmulatorServer: ObservableObject {
                     }
                 }
 
+            </script>
+        </body>
+        </html>
+        """
+    }
+    
+    private func createClickerHTML() -> String {
+        """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Flash Clicker Game</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    text-align: center;
+                    margin-top: 50px;
+                }
+                #clickButton {
+                    padding: 20px;
+                    font-size: 24px;
+                    background-color: #4CAF50;
+                    color: white;
+                    border: none;
+                    cursor: pointer;
+                    border-radius: 10px;
+                }
+                #clickButton:hover {
+                    background-color: #45a049;
+                }
+                #score {
+                    font-size: 48px;
+                    margin: 20px 0;
+                }
+                #instructions {
+                    margin-top: 20px;
+                    font-size: 16px;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>Flash Clicker Game</h1>
+            <div id="score">0</div>
+            <button id="clickButton">Click Me!</button>
+
+            <div id="instructions">
+                To import or play other games, hit the "+" button and import your SWF files.
+            </div>
+
+            <script>
+                // Set initial score
+                let score = 0;
+
+                // Get the score element and button element
+                const scoreDisplay = document.getElementById("score");
+                const clickButton = document.getElementById("clickButton");
+
+                // Function to increment the score
+                function incrementScore() {
+                    score++;  // Increase score
+                    scoreDisplay.textContent = score;  // Update score on the page
+                }
+
+                // Add click event to the button (mouse input)
+                clickButton.addEventListener("click", incrementScore);
+
+                // Add keyboard event listener (keyboard input)
+                document.addEventListener("keydown", (event) => {
+                    // List of keys that will increment the score
+                    const validKeys = [
+                        "Space",      // Spacebar
+                        "ArrowUp",    // Arrow keys
+                        "ArrowDown",
+                        "ArrowLeft",
+                        "ArrowRight",
+                        "KeyW",       // WASD keys
+                        "KeyA",
+                        "KeyS",
+                        "KeyD",
+                        "KeyB",       // B, X, Y keys
+                        "KeyX",
+                        "KeyY"
+                    ];
+
+                    // Check if the pressed key is in the validKeys list
+                    if (validKeys.includes(event.code)) {
+                        incrementScore();
+                    }
+                });
             </script>
         </body>
         </html>
