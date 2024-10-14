@@ -22,13 +22,17 @@ Credit to **nythepegasus** for adding xcconfigs.
 ## License
 This project is licensed under the **AGPLv3**. You can find the full license text in the `LICENSE` file.
 
-## How to Use
+## How to Install
+### Method 1
 1. Download the latest release from the [Releases](https://github.com/0-Blu/StikEMU/releases) section.
-2. Follow the setup instructions provided.
+2. Use a Sideloading tool such as [SideStore.](https://sidestore.io)
 3. Load your Flash games, and enjoy the nostalgia!
+### Method 2
+1. Join the [TestFlight](#) (Coming Soon).
+2. Load your Flash games, and enjoy the nostalgia!
 
 ## Feedback
-Your feedback helps us improve StikFlash! Please [submit any issues](https://github.com/0-Blu/StikEMU/issues).
+Your feedback helps us improve StikFlash! Please [submit any issues](https://github.com/0-Blu/StikEMU/issues) or join my [Discord server.](https://discord.gg/a6qxs97Gun)
 
 ---
 
