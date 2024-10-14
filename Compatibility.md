@@ -3,9 +3,9 @@
 - Fire Boy & Water Girl (Black Screen)
 - Minicraft
 - Zombotron
-## Semi Working
+## Not Playable
 - Doom (Lag)
-## Tested Working
+## Tested Working & Playable
 - Flash Pacman
 - Duck Life
 - Duck Life 2
