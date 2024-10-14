@@ -13,6 +13,9 @@ One more note, make sure low power mode is off. Having it on will greatly reduce
 ## Compatibility
 See the `Compatibility.md` file.
 
+## Discord
+You can join my Discord server [here.](https://discord.gg/VA6syDVdP5)
+
 ## Contributors
 Credit to **nythepegasus** for adding xcconfigs.
 
