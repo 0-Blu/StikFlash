@@ -4,7 +4,7 @@ Welcome to **StikFlash**, a work-in-progress Flash emulator that runs the **Ruff
 
 ## Notes: 
 - StikFlash does not directly contain any Ruffle code. It utilizes Ruffle as an external library to power Flash emulation on iOS devices. 
-- StikFlash needs an internet connection. Beta 3 should fix this by only requiring an internet connection after the first install.
+- StikFlash needs an internet connection. Beta 3 should fix this by only requiring an internet connection after the initial install.
 - You cannot sign the ipa with an enterprise cert because the file importer will not work.
 - Make sure low power mode is off. Having it on will greatly reduce performance.
 
