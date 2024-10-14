@@ -10,116 +10,24 @@ import WebKit
 import Combine
 import GameController
 
-struct JoystickView: View {
-    // Callbacks for movement and release
-    var onMove: (_ angle: Double, _ magnitude: Double) -> Void
-    var onRelease: () -> Void
-    
-    // Joystick properties
-    private let joystickRadius: CGFloat = 80  // Increased radius for larger joystick
-    private let knobRadius: CGFloat = 40      // Proportional knob size
-    
-    @State private var knobPosition: CGPoint = .zero
-    @GestureState private var dragOffset: CGSize = .zero
-    @State private var isControllerConnected: Bool = false
-    
-    var body: some View {
-        ZStack {
-            if !isControllerConnected {
-                // Joystick Base
-                Circle()
-                    .fill(LinearGradient(
-                        gradient: Gradient(colors: [Color.gray.opacity(0.5), Color.gray.opacity(0.3)]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
-                    .frame(width: joystickRadius * 2, height: joystickRadius * 2)
-                    .shadow(color: Color.black.opacity(0.5), radius: 10, x: 0, y: 5)
-                
-                // Joystick Knob
-                Circle()
-                    .fill(LinearGradient(
-                        gradient: Gradient(colors: [Color.blue.opacity(0.8), Color.blue.opacity(1.0)]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
-                    .frame(width: knobRadius * 2, height: knobRadius * 2)
-                    .shadow(color: Color.black.opacity(0.6), radius: 5, x: 0, y: 3)
-                    .offset(x: knobPosition.x + dragOffset.width, y: knobPosition.y + dragOffset.height)
-                    .gesture(
-                        DragGesture()
-                            .onChanged { value in
-                                let location = value.location
-                                let deltaX = location.x - joystickRadius
-                                let deltaY = location.y - joystickRadius
-                                let distance = sqrt(deltaX * deltaX + deltaY * deltaY)
-                                let maxDistance = joystickRadius - knobRadius
-                                
-                                if distance > maxDistance {
-                                    let angle = atan2(deltaY, deltaX)
-                                    let clampedX = cos(angle) * maxDistance
-                                    let clampedY = sin(angle) * maxDistance
-                                    knobPosition = CGPoint(x: clampedX, y: clampedY)
-                                } else {
-                                    knobPosition = CGPoint(x: deltaX, y: deltaY)
-                                }
-                                
-                                let angleInDegrees = atan2(-knobPosition.y, knobPosition.x) * 180 / .pi
-                                let magnitude = min(distance / maxDistance, 1.0)
-                                
-                                onMove(angleInDegrees, Double(magnitude))
-                            }
-                            .onEnded { _ in
-                                withAnimation(.easeOut(duration: 0.2)) {
-                                    knobPosition = .zero
-                                }
-                                onRelease()
-                            }
-                    )
-                    .animation(.easeOut(duration: 0.2), value: knobPosition)
-            }
-        }
-        .frame(width: joystickRadius * 2, height: joystickRadius * 2)
-        .onAppear {
-            checkForController()
-            NotificationCenter.default.addObserver(forName: .GCControllerDidConnect, object: nil, queue: .main) { _ in
-                checkForController()
-            }
-            NotificationCenter.default.addObserver(forName: .GCControllerDidDisconnect, object: nil, queue: .main) { _ in
-                checkForController()
-            }
-        }
-    }
-    
-    // Function to check if a controller is connected
-    private func checkForController() {
-        if let _ = GCController.controllers().first {
-            isControllerConnected = true
-        } else {
-            isControllerConnected = false
-        }
-    }
-}
-
 struct FlashEmulatorView: View {
     @StateObject private var flashServer = FlashEmulatorServer()
     @State private var webView = WKWebView()
-    @State private var lastSentDirection: Set<String> = []
     @Binding var selectedFile: URL?
     
-    @State private var pressedKeys: Set<String> = []
-    @State private var inputTimer: Timer?
     @State private var controller: GCController?
+    @State private var virtualController: GCVirtualController?
     @State private var showingSettings = false
-    @State private var showingHomeViewPopover = false // New state for showing the HomeView popover
+    @State private var showingHomeViewPopover = false
     @State private var keyBindings: [String: String] = [
-        "up": "ArrowUp",
-        "down": "ArrowDown",
-        "left": "ArrowLeft",
-        "right": "ArrowRight",
-        "space": "Space"
+        "space": "Space",
+        "buttonB": "KeyB",
+        "buttonX": "KeyX",
+        "buttonY": "KeyY"
     ]
     
+    @State private var thumbstickMapping = "Arrow Keys"  // Default is Arrow Keys
+    @State private var useDirectionPad = false  // Toggle between Thumbstick and D-pad
     @State private var showControls = true
     @Environment(\.verticalSizeClass) var verticalSizeClass
     
@@ -129,228 +37,211 @@ struct FlashEmulatorView: View {
                 VStack(spacing: 0) {
                     // Game content
                     WebView(url: URL(string: "http://localhost:\(flashServer.port)")!, webView: $webView)
-                        .frame(width: geometry.size.width, height: verticalSizeClass == .regular ? geometry.size.height * 0.7 : geometry.size.height) // Full height in landscape mode
+                        .frame(width: geometry.size.width, height: verticalSizeClass == .regular ? geometry.size.height * 0.7 : geometry.size.height)
                         .onChange(of: selectedFile) { newFile in
                             if let file = newFile {
                                 loadFile(fileURL: file)
                             }
                         }
                     
-                    // Conditionally show UI controls based on the toggle state
                     if verticalSizeClass == .regular && showControls {
-                        Spacer() // Keep this only in portrait mode
-                        
-                        HStack(spacing: 50) {
-                            JoystickView(onMove: { angle, magnitude in
-                                handleJoystickMove(angle: angle, magnitude: magnitude)
-                            }, onRelease: {
-                                handleJoystickRelease()
-                            })
-                            .frame(width: 160, height: 160)
-                            .padding()
-                            
+                        Spacer()
+                        // UI Controls shown when showControls is true
+                        VStack(spacing: 20) {
                             SpaceBarButton(onPress: {
                                 pressSpaceBar()
                             }, onRelease: {
                                 releaseSpaceBar()
                             }, spaceKeyBind: keyBindings["space"] ?? "Space")
                             .frame(width: 120, height: 60)
+                            
+                            // You can add other UI controls here
                         }
                         .padding(.bottom, 40)
                     } else {
-                        Spacer(minLength: 0) // No excess space in landscape mode
+                        Spacer(minLength: 0)
                     }
                 }
             }
             .onAppear {
                 flashServer.start()
-                setupControllerInput()
+                if showControls {
+                    setupVirtualController()
+                }
+            }
+            .onChange(of: showControls) { newValue in
+                if newValue {
+                    setupVirtualController()
+                } else {
+                    disconnectVirtualController()
+                }
+            }
+            .onChange(of: useDirectionPad) { _ in
+                disconnectVirtualController()
+                setupVirtualController()
             }
             .onDisappear {
                 flashServer.stop()
-                stopInputTimer()
-                releaseAllKeys()
                 releaseSpaceBar()
+                disconnectVirtualController()
             }
             .navigationBarItems(
                 trailing: HStack {
-                    // First button for settings
                     Button(action: {
                         showingSettings = true
                     }) {
                         Image(systemName: "gearshape.fill")
                     }
                     .sheet(isPresented: $showingSettings) {
-                        SettingsView(keyBindings: $keyBindings, showControls: $showControls)
+                        SettingsView(keyBindings: $keyBindings, showControls: $showControls, useDirectionPad: $useDirectionPad, thumbstickMapping: $thumbstickMapping)
                     }
 
-                    // Second button for HomeView popover
                     Button(action: {
                         showingHomeViewPopover = true
                     }) {
                         Image(systemName: "plus.circle")
                     }
                     .popover(isPresented: $showingHomeViewPopover) {
-                        HomeView(selectedFile: $selectedFile, isPresented: $showingHomeViewPopover) // Pass both bindings
-                            .frame(width: 300, height: 400) // Adjust the size of the popover
+                        HomeView(selectedFile: $selectedFile, isPresented: $showingHomeViewPopover)
+                            .frame(width: 300, height: 400)
                     }
                 }
             )
-            .navigationBarHidden(verticalSizeClass == .compact) // Hide the navigation bar in landscape mode
+            .navigationBarHidden(verticalSizeClass == .compact)
         }
         .navigationViewStyle(StackNavigationViewStyle())
     }
 
-    // MARK: - SettingsView
-    struct SettingsView: View {
-        @Binding var keyBindings: [String: String]
-        @Binding var showControls: Bool // New binding to control UI controls visibility
+    // MARK: - Virtual Controller Setup
+    private func setupVirtualController() {
+        let virtualConfig = GCVirtualController.Configuration()
         
-        var body: some View {
-            VStack {
-                Text("Settings")
-                    .font(.headline)
-                    .padding()
-                
-                Toggle(isOn: $showControls) {
-                    Text("Show UI Controls")
-                }
-                .padding()
-                
-                HStack {
-                    Text("Up:")
-                    TextField("ArrowUp", text: binding(for: "up"))
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 150)
-                }
-                HStack {
-                    Text("Down:")
-                    TextField("ArrowDown", text: binding(for: "down"))
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 150)
-                }
-                HStack {
-                    Text("Left:")
-                    TextField("ArrowLeft", text: binding(for: "left"))
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 150)
-                }
-                HStack {
-                    Text("Right:")
-                    TextField("ArrowRight", text: binding(for: "right"))
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 150)
-                }
-                HStack {
-                    Text("Space:")
-                    TextField("Space", text: binding(for: "space"))
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 150)
-                }
-                
-                Spacer()
-            }
-            .padding()
+        // Add either Thumbstick or D-pad based on the user selection
+        if useDirectionPad {
+            virtualConfig.elements = [GCInputDirectionPad, GCInputButtonA, GCInputButtonB, GCInputButtonX, GCInputButtonY]
+        } else {
+            virtualConfig.elements = [GCInputLeftThumbstick, GCInputButtonA, GCInputButtonB, GCInputButtonX, GCInputButtonY]
         }
         
-        private func binding(for key: String) -> Binding<String> {
-            Binding<String>(
-                get: { keyBindings[key] ?? "" },
-                set: { newValue in keyBindings[key] = newValue }
-            )
+        virtualController = GCVirtualController(configuration: virtualConfig)
+        virtualController?.connect()
+        
+        virtualController?.controller?.extendedGamepad?.valueChangedHandler = { [self] gamepad, element in
+            handleGamepadInput(gamepad)
         }
     }
-    // MARK: - Loading Selected File
+    
     private func loadFile(fileURL: URL) {
-        // Modify the server to serve the selected file
         flashServer.loadFile(fileURL: fileURL)
-        
-        // Reload the WebView to load the new file
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             webView.reload()
         }
     }
 
-    // MARK: - Controller Input Setup
-    private func setupControllerInput() {
-        NotificationCenter.default.addObserver(
-            forName: .GCControllerDidConnect,
-            object: nil,
-            queue: .main
-        ) { notification in
-            if let connectedController = notification.object as? GCController {
-                controller = connectedController
-                setupControllerHandlers(controller: connectedController)
+    private func disconnectVirtualController() {
+        virtualController?.disconnect()
+        virtualController = nil
+    }
+
+    // MARK: - Handle Gamepad Input
+    private func handleGamepadInput(_ gamepad: GCExtendedGamepad) {
+        // Handle Thumbstick or D-pad Input
+        if useDirectionPad {
+            handleDirectionPad(gamepad.dpad)
+        } else {
+            handleThumbstick(gamepad.leftThumbstick)
+        }
+
+        // Handle Button A (space)
+        if gamepad.buttonA.isPressed {
+            pressSpaceBar()
+        } else {
+            releaseSpaceBar()
+        }
+
+        // Handle Button B
+        if gamepad.buttonB.isPressed {
+            pressButtonB()
+        } else {
+            releaseButtonB()
+        }
+
+        // Handle Button X
+        if gamepad.buttonX.isPressed {
+            pressButtonX()
+        } else {
+            releaseButtonX()
+        }
+
+        // Handle Button Y
+        if gamepad.buttonY.isPressed {
+            pressButtonY()
+        } else {
+            releaseButtonY()
+        }
+    }
+
+    private func handleThumbstick(_ thumbstick: GCControllerDirectionPad) {
+        // Map thumbstick to either WASD or Arrow Keys based on user selection
+        if thumbstickMapping == "Arrow Keys" {
+            // Map to Arrow Keys
+            if thumbstick.up.isPressed {
+                sendKeyPress(key: "ArrowUp", keyCode: 38, code: "ArrowUp")
+            } else {
+                sendKeyUp(key: "ArrowUp", keyCode: 38, code: "ArrowUp")
+            }
+            
+            if thumbstick.down.isPressed {
+                sendKeyPress(key: "ArrowDown", keyCode: 40, code: "ArrowDown")
+            } else {
+                sendKeyUp(key: "ArrowDown", keyCode: 40, code: "ArrowDown")
+            }
+
+            if thumbstick.left.isPressed {
+                sendKeyPress(key: "ArrowLeft", keyCode: 37, code: "ArrowLeft")
+            } else {
+                sendKeyUp(key: "ArrowLeft", keyCode: 37, code: "ArrowLeft")
+            }
+
+            if thumbstick.right.isPressed {
+                sendKeyPress(key: "ArrowRight", keyCode: 39, code: "ArrowRight")
+            } else {
+                sendKeyUp(key: "ArrowRight", keyCode: 39, code: "ArrowRight")
+            }
+        } else if thumbstickMapping == "WASD" {
+            // Map to WASD keys
+            if thumbstick.up.isPressed {
+                sendKeyPress(key: "w", keyCode: 87, code: "KeyW")
+            } else {
+                sendKeyUp(key: "w", keyCode: 87, code: "KeyW")
+            }
+            
+            if thumbstick.down.isPressed {
+                sendKeyPress(key: "s", keyCode: 83, code: "KeyS")
+            } else {
+                sendKeyUp(key: "s", keyCode: 83, code: "KeyS")
+            }
+
+            if thumbstick.left.isPressed {
+                sendKeyPress(key: "a", keyCode: 65, code: "KeyA")
+            } else {
+                sendKeyUp(key: "a", keyCode: 65, code: "KeyA")
+            }
+
+            if thumbstick.right.isPressed {
+                sendKeyPress(key: "d", keyCode: 68, code: "KeyD")
+            } else {
+                sendKeyUp(key: "d", keyCode: 68, code: "KeyD")
             }
         }
-        
-        // In case controller was already connected before the view appeared
-        if let connectedController = GCController.controllers().first {
-            controller = connectedController
-            setupControllerHandlers(controller: connectedController)
-        }
     }
 
-    // MARK: - Controller Handlers
-    private func setupControllerHandlers(controller: GCController) {
-        if let extendedGamepad = controller.extendedGamepad {
-            // Map joystick input to emulator movement
-            extendedGamepad.leftThumbstick.valueChangedHandler = { thumbstick, xValue, yValue in
-                handleJoystickMove(angle: Double(atan2(Double(yValue), Double(xValue)) * 180 / .pi),
-                                   magnitude: Double(sqrt(Double(xValue * xValue + yValue * yValue))))
-            }
-        
-            // Map the A button to space bar actions
-            extendedGamepad.buttonA.pressedChangedHandler = { button, _, pressed in
-                if pressed {
-                    pressSpaceBar()
-                } else {
-                    releaseSpaceBar()
-                }
-            }
-        }
+    private func handleDirectionPad(_ dpad: GCControllerDirectionPad) {
+        // Handle D-pad input mapped to Arrow Keys
+        handleThumbstick(dpad)  // Reusing the same logic as Thumbstick for Arrow Keys or WASD
     }
 
-    // MARK: - Input Handling Functions
-    private func handleJoystickMove(angle: Double, magnitude: Double) {
-        guard magnitude >= 0.1 else {
-            handleJoystickRelease() // Ignore slight movements in the dead zone
-            return
-        }
-
-        // Get the directions based on the angle
-        let directions = getDirections(from: angle)
-
-        // Update pressedKeys and ensure smooth transitions
-        if directions != pressedKeys {
-            stopInputTimer() // Stop the input timer if directions have changed
-            pressedKeys = directions
-
-            // Restart the input timer with new direction
-            if !pressedKeys.isEmpty {
-                startInputTimer()
-            }
-        }
-    }
-
-    private func startInputTimer() {
-        stopInputTimer() // Ensure no timer overlap
-        inputTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
-            sendPressedKeys()
-        }
-    }
-
-    private func stopInputTimer() {
-        inputTimer?.invalidate()
-        inputTimer = nil
-    }
-
-    private func handleJoystickRelease() {
-        pressedKeys.removeAll() // Clear pressed keys
-        stopInputTimer() // Stop the input timer
-        releaseAllKeys() // Send keyup events for all keys
-    }
-
+    // MARK: - Button Handlers
     private func pressSpaceBar() {
         sendKeyPress(key: keyBindings["space"]!, keyCode: keyCode(for: keyBindings["space"]!), code: keyBindings["space"]!)
     }
@@ -359,75 +250,32 @@ struct FlashEmulatorView: View {
         sendKeyUp(key: keyBindings["space"]!, keyCode: keyCode(for: keyBindings["space"]!), code: keyBindings["space"]!)
     }
 
-    private func sendPressedKeys() {
-        for key in pressedKeys {
-            sendKeyPress(key: key, keyCode: keyCode(for: key), code: key)
-        }
+    private func pressButtonB() {
+        sendKeyPress(key: keyBindings["buttonB"]!, keyCode: keyCode(for: keyBindings["buttonB"]!), code: keyBindings["buttonB"]!)
     }
 
-    private func getDirections(from angle: Double) -> Set<String> {
-        var directions: Set<String> = []
-
-        // Normalize angle between 0 and 360
-        var normalizedAngle = angle
-        if normalizedAngle < 0 {
-            normalizedAngle += 360
-        }
-
-        // Define angle ranges for 8 directions
-        if (normalizedAngle >= 337.5 || normalizedAngle < 22.5) {
-            directions.insert(keyBindings["right"]!)
-        }
-        if (normalizedAngle >= 22.5 && normalizedAngle < 67.5) {
-            directions.insert(keyBindings["up"]!)
-            directions.insert(keyBindings["right"]!)
-        }
-        if (normalizedAngle >= 67.5 && normalizedAngle < 112.5) {
-            directions.insert(keyBindings["up"]!)
-        }
-        if (normalizedAngle >= 112.5 && normalizedAngle < 157.5) {
-            directions.insert(keyBindings["up"]!)
-            directions.insert(keyBindings["left"]!)
-        }
-        if (normalizedAngle >= 157.5 && normalizedAngle < 202.5) {
-            directions.insert(keyBindings["left"]!)
-        }
-        if (normalizedAngle >= 202.5 && normalizedAngle < 247.5) {
-            directions.insert(keyBindings["down"]!)
-            directions.insert(keyBindings["left"]!)
-        }
-        if (normalizedAngle >= 247.5 && normalizedAngle < 292.5) {
-            directions.insert(keyBindings["down"]!)
-        }
-        if (normalizedAngle >= 292.5 && normalizedAngle < 337.5) {
-            directions.insert(keyBindings["down"]!)
-            directions.insert(keyBindings["right"]!)
-        }
-
-        return directions
+    private func releaseButtonB() {
+        sendKeyUp(key: keyBindings["buttonB"]!, keyCode: keyCode(for: keyBindings["buttonB"]!), code: keyBindings["buttonB"]!)
     }
-    
-    private func keyCode(for key: String) -> Int {
-        switch key {
-        case keyBindings["up"]:
-            return 38
-        case keyBindings["down"]:
-            return 40
-        case keyBindings["left"]:
-            return 37
-        case keyBindings["right"]:
-            return 39
-        case keyBindings["space"]:
-            return 32
-        default:
-            return 0
-        }
+
+    private func pressButtonX() {
+        sendKeyPress(key: keyBindings["buttonX"]!, keyCode: keyCode(for: keyBindings["buttonX"]!), code: keyBindings["buttonX"]!)
+    }
+
+    private func releaseButtonX() {
+        sendKeyUp(key: keyBindings["buttonX"]!, keyCode: keyCode(for: keyBindings["buttonX"]!), code: keyBindings["buttonX"]!)
+    }
+
+    private func pressButtonY() {
+        sendKeyPress(key: keyBindings["buttonY"]!, keyCode: keyCode(for: keyBindings["buttonY"]!), code: keyBindings["buttonY"]!)
+    }
+
+    private func releaseButtonY() {
+        sendKeyUp(key: keyBindings["buttonY"]!, keyCode: keyCode(for: keyBindings["buttonY"]!), code: keyBindings["buttonY"]!)
     }
 
     // MARK: - JavaScript Injection for Key Events
     private func sendKeyPress(key: String, keyCode: Int, code: String) {
-        guard !lastSentDirection.contains(key) else { return }
-        
         let jsCode = """
         (function() {
             var event = new KeyboardEvent('keydown', {
@@ -443,12 +291,9 @@ struct FlashEmulatorView: View {
         """
         
         webView.evaluateJavaScript(jsCode)
-        lastSentDirection.insert(key)
     }
 
     private func sendKeyUp(key: String, keyCode: Int, code: String) {
-        guard lastSentDirection.contains(key) else { return }
-        
         let jsCode = """
         (function() {
             var event = new KeyboardEvent('keyup', {
@@ -464,14 +309,108 @@ struct FlashEmulatorView: View {
         """
         
         webView.evaluateJavaScript(jsCode)
-        lastSentDirection.remove(key)
     }
 
-    // Release all keys
-    private func releaseAllKeys() {
-        for key in lastSentDirection {
-            sendKeyUp(key: key, keyCode: keyCode(for: key), code: key)
+    // MARK: - KeyCode Mapping Function
+    private func keyCode(for key: String) -> Int {
+        switch key {
+        case "Space":
+            return 32
+        case "KeyB":
+            return 66 // ASCII code for 'B'
+        case "KeyX":
+            return 88 // ASCII code for 'X'
+        case "KeyY":
+            return 89 // ASCII code for 'Y'
+        case "ArrowUp":
+            return 38
+        case "ArrowDown":
+            return 40
+        case "ArrowLeft":
+            return 37
+        case "ArrowRight":
+            return 39
+        case "w":
+            return 87 // ASCII code for 'W'
+        case "a":
+            return 65 // ASCII code for 'A'
+        case "s":
+            return 83 // ASCII code for 'S'
+        case "d":
+            return 68 // ASCII code for 'D'
+        default:
+            return 0
         }
-        lastSentDirection.removeAll()
+    }
+}
+
+// MARK: - SettingsView for Remapping Controls and Switching Input Modes
+struct SettingsView: View {
+    @Binding var keyBindings: [String: String]
+    @Binding var showControls: Bool
+    @Binding var useDirectionPad: Bool
+    @Binding var thumbstickMapping: String  // New binding for thumbstick mapping options
+    
+    var body: some View {
+        VStack {
+            Text("Settings")
+                .font(.headline)
+                .padding()
+            
+            Toggle(isOn: $showControls) {
+                Text("Show UI Controls")
+            }
+            .padding()
+            
+            Toggle(isOn: $useDirectionPad) {
+                Text("Use Direction Pad instead of Thumbstick")
+            }
+            .padding()
+            
+            Text("Thumbstick Remap")
+            Picker("Thumbstick Mapping", selection: $thumbstickMapping) {
+                Text("Arrow Keys").tag("Arrow Keys")
+                Text("WASD").tag("WASD")
+            }
+            .pickerStyle(SegmentedPickerStyle())
+            .padding()
+
+            Group {
+                HStack {
+                    Text("Space:")
+                    TextField("Space", text: binding(for: "space"))
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 150)
+                }
+                HStack {
+                    Text("Button B:")
+                    TextField("KeyB", text: binding(for: "buttonB"))
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 150)
+                }
+                HStack {
+                    Text("Button X:")
+                    TextField("KeyX", text: binding(for: "buttonX"))
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 150)
+                }
+                HStack {
+                    Text("Button Y:")
+                    TextField("KeyY", text: binding(for: "buttonY"))
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 150)
+                }
+            }
+            
+            Spacer()
+        }
+        .padding()
+    }
+    
+    private func binding(for key: String) -> Binding<String> {
+        Binding<String>(
+            get: { keyBindings[key] ?? "" },
+            set: { newValue in keyBindings[key] = newValue }
+        )
     }
 }
