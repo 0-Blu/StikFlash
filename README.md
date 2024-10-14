@@ -7,6 +7,9 @@ Welcome to **StikFlash**, a work-in-progress Flash emulator that runs the **Ruff
 ## Features
 - **Ruffle Flash Emulator Fully on Device**: StikFlash runs the Ruffle Flash emulator directly on your iOS device, using a built-in, secure web server. Flash files are pulled/downloaded from [Ruffle's official source](https://unpkg.com/@ruffle-rs/ruffle) to ensure private and seamless gameplay, with all operations happening entirely on your device. 🔒
 
+## Compatibility
+See the `Compatibility` file.
+
 ## Contributors
 Credit to **nythepegasus** for adding xcconfigs.
 
