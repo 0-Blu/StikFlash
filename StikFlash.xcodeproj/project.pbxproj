@@ -28,18 +28,18 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		DCBD2D472CB9F55700E2159E /* StikEMU.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StikEMU.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		DCBD2D582CB9F55900E2159E /* StikEMUTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StikEMUTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		DCBD2D622CB9F55900E2159E /* StikEMUUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StikEMUUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		DCBD2D472CB9F55700E2159E /* StikFlash.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StikFlash.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DCBD2D582CB9F55900E2159E /* StikFlashTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StikFlashTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		DCBD2D622CB9F55900E2159E /* StikFlashUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StikFlashUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		DCF75BA02CBB6969001C9F28 /* Exceptions for "StikEMU" folder in "StikEMU" target */ = {
+		DCF75BA02CBB6969001C9F28 /* Exceptions for "StikEMU" folder in "StikFlash" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = DCBD2D462CB9F55700E2159E /* StikEMU */;
+			target = DCBD2D462CB9F55700E2159E /* StikFlash */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -47,7 +47,7 @@
 		DCBD2D492CB9F55700E2159E /* StikEMU */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				DCF75BA02CBB6969001C9F28 /* Exceptions for "StikEMU" folder in "StikEMU" target */,
+				DCF75BA02CBB6969001C9F28 /* Exceptions for "StikEMU" folder in "StikFlash" target */,
 			);
 			path = StikEMU;
 			sourceTree = "<group>";
@@ -103,9 +103,9 @@
 		DCBD2D482CB9F55700E2159E /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				DCBD2D472CB9F55700E2159E /* StikEMU.app */,
-				DCBD2D582CB9F55900E2159E /* StikEMUTests.xctest */,
-				DCBD2D622CB9F55900E2159E /* StikEMUUITests.xctest */,
+				DCBD2D472CB9F55700E2159E /* StikFlash.app */,
+				DCBD2D582CB9F55900E2159E /* StikFlashTests.xctest */,
+				DCBD2D622CB9F55900E2159E /* StikFlashUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -113,9 +113,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		DCBD2D462CB9F55700E2159E /* StikEMU */ = {
+		DCBD2D462CB9F55700E2159E /* StikFlash */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = DCBD2D6C2CB9F55900E2159E /* Build configuration list for PBXNativeTarget "StikEMU" */;
+			buildConfigurationList = DCBD2D6C2CB9F55900E2159E /* Build configuration list for PBXNativeTarget "StikFlash" */;
 			buildPhases = (
 				DCBD2D432CB9F55700E2159E /* Sources */,
 				DCBD2D442CB9F55700E2159E /* Frameworks */,
@@ -128,17 +128,17 @@
 			fileSystemSynchronizedGroups = (
 				DCBD2D492CB9F55700E2159E /* StikEMU */,
 			);
-			name = StikEMU;
+			name = StikFlash;
 			packageProductDependencies = (
 				DCBD2D762CB9F56800E2159E /* Swifter */,
 			);
 			productName = StikEMU;
-			productReference = DCBD2D472CB9F55700E2159E /* StikEMU.app */;
+			productReference = DCBD2D472CB9F55700E2159E /* StikFlash.app */;
 			productType = "com.apple.product-type.application";
 		};
-		DCBD2D572CB9F55900E2159E /* StikEMUTests */ = {
+		DCBD2D572CB9F55900E2159E /* StikFlashTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = DCBD2D6F2CB9F55900E2159E /* Build configuration list for PBXNativeTarget "StikEMUTests" */;
+			buildConfigurationList = DCBD2D6F2CB9F55900E2159E /* Build configuration list for PBXNativeTarget "StikFlashTests" */;
 			buildPhases = (
 				DCBD2D542CB9F55900E2159E /* Sources */,
 				DCBD2D552CB9F55900E2159E /* Frameworks */,
@@ -152,16 +152,16 @@
 			fileSystemSynchronizedGroups = (
 				DCBD2D5B2CB9F55900E2159E /* StikEMUTests */,
 			);
-			name = StikEMUTests;
+			name = StikFlashTests;
 			packageProductDependencies = (
 			);
 			productName = StikEMUTests;
-			productReference = DCBD2D582CB9F55900E2159E /* StikEMUTests.xctest */;
+			productReference = DCBD2D582CB9F55900E2159E /* StikFlashTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		DCBD2D612CB9F55900E2159E /* StikEMUUITests */ = {
+		DCBD2D612CB9F55900E2159E /* StikFlashUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = DCBD2D722CB9F55900E2159E /* Build configuration list for PBXNativeTarget "StikEMUUITests" */;
+			buildConfigurationList = DCBD2D722CB9F55900E2159E /* Build configuration list for PBXNativeTarget "StikFlashUITests" */;
 			buildPhases = (
 				DCBD2D5E2CB9F55900E2159E /* Sources */,
 				DCBD2D5F2CB9F55900E2159E /* Frameworks */,
@@ -175,11 +175,11 @@
 			fileSystemSynchronizedGroups = (
 				DCBD2D652CB9F55900E2159E /* StikEMUUITests */,
 			);
-			name = StikEMUUITests;
+			name = StikFlashUITests;
 			packageProductDependencies = (
 			);
 			productName = StikEMUUITests;
-			productReference = DCBD2D622CB9F55900E2159E /* StikEMUUITests.xctest */;
+			productReference = DCBD2D622CB9F55900E2159E /* StikFlashUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -205,7 +205,7 @@
 					};
 				};
 			};
-			buildConfigurationList = DCBD2D422CB9F55700E2159E /* Build configuration list for PBXProject "StikEMU" */;
+			buildConfigurationList = DCBD2D422CB9F55700E2159E /* Build configuration list for PBXProject "StikFlash" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -222,9 +222,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				DCBD2D462CB9F55700E2159E /* StikEMU */,
-				DCBD2D572CB9F55900E2159E /* StikEMUTests */,
-				DCBD2D612CB9F55900E2159E /* StikEMUUITests */,
+				DCBD2D462CB9F55700E2159E /* StikFlash */,
+				DCBD2D572CB9F55900E2159E /* StikFlashTests */,
+				DCBD2D612CB9F55900E2159E /* StikFlashUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -280,12 +280,12 @@
 /* Begin PBXTargetDependency section */
 		DCBD2D5A2CB9F55900E2159E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = DCBD2D462CB9F55700E2159E /* StikEMU */;
+			target = DCBD2D462CB9F55700E2159E /* StikFlash */;
 			targetProxy = DCBD2D592CB9F55900E2159E /* PBXContainerItemProxy */;
 		};
 		DCBD2D642CB9F55900E2159E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = DCBD2D462CB9F55700E2159E /* StikEMU */;
+			target = DCBD2D462CB9F55700E2159E /* StikFlash */;
 			targetProxy = DCBD2D632CB9F55900E2159E /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -447,7 +447,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.5;
 				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
-				PRODUCT_NAME = "$(PRODUCT_NAME)";
+				PRODUCT_NAME = StikFlash;
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -500,7 +500,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.5;
 				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
-				PRODUCT_NAME = "$(PRODUCT_NAME)";
+				PRODUCT_NAME = StikFlash;
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -529,7 +529,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/StikEMU.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/StikEMU";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/StikFlash.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/StikFlash";
 				XROS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -552,7 +552,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/StikEMU.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/StikEMU";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/StikFlash.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/StikFlash";
 				XROS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -604,7 +604,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		DCBD2D422CB9F55700E2159E /* Build configuration list for PBXProject "StikEMU" */ = {
+		DCBD2D422CB9F55700E2159E /* Build configuration list for PBXProject "StikFlash" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				DCBD2D6A2CB9F55900E2159E /* Debug */,
@@ -613,7 +613,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		DCBD2D6C2CB9F55900E2159E /* Build configuration list for PBXNativeTarget "StikEMU" */ = {
+		DCBD2D6C2CB9F55900E2159E /* Build configuration list for PBXNativeTarget "StikFlash" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				DCBD2D6D2CB9F55900E2159E /* Debug */,
@@ -622,7 +622,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		DCBD2D6F2CB9F55900E2159E /* Build configuration list for PBXNativeTarget "StikEMUTests" */ = {
+		DCBD2D6F2CB9F55900E2159E /* Build configuration list for PBXNativeTarget "StikFlashTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				DCBD2D702CB9F55900E2159E /* Debug */,
@@ -631,7 +631,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		DCBD2D722CB9F55900E2159E /* Build configuration list for PBXNativeTarget "StikEMUUITests" */ = {
+		DCBD2D722CB9F55900E2159E /* Build configuration list for PBXNativeTarget "StikFlashUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				DCBD2D732CB9F55900E2159E /* Debug */,
