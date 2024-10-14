@@ -1,0 +1,18 @@
+{
+  "name": "StikFlash",
+  "identifier": "com.stik.StikEMU",
+  "description": "StikFlash Emulator for iOS - A flash emulator for iOS devices",
+  "version": "2.5",
+  "apps": [
+    {
+      "name": "StikFlash",
+      "bundleIdentifier": "com.stik.StikEMU",
+      "developerName": "Max",
+      "iconURL": "https://0-blu.github.io/StikFlash/StikFlashIcon.png",
+      "version": "2.5",
+      "ipaURL": "https://0-blu.github.io/StikFlash/StikFlash.ipa",
+      "localizedDescription": "Run Flash-based games and apps using the StikFlash emulator for iOS.",
+      "size": 1375174
+    }
+  ]
+}
