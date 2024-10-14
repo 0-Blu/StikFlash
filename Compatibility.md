@@ -1,10 +1,10 @@
 ## Not Working
-- 2048 (Screen Size Issue)
 - Fire Boy & Water Girl (Black Screen)
 - Minicraft
 - Zombotron
-## Not Playable
+## Boots But Not Playable
 - Doom (Lag)
+- 2048 (Screen Size Issue)
 ## Tested Working & Playable
 - Flash Pacman
 - Duck Life
