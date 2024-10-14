@@ -15,7 +15,7 @@ StikFlash runs the Ruffle Flash emulator directly on your iOS device, using a bu
 See the `Compatibility.md` file.
 
 ## Discord
-You can join my Discord server [here.](https://discord.gg/a6qxs97Gun)
+You can join our Discord server [here.](https://discord.gg/a6qxs97Gun)
 
 ## Contributors
 Credit to **nythepegasus** for adding xcconfigs.
@@ -40,7 +40,7 @@ This project is licensed under the **AGPLv3**. You can find the full license tex
 
 
 ## Feedback
-Your feedback helps us improve StikFlash! Please [submit any issues](https://github.com/0-Blu/StikEMU/issues) or join my [Discord server.](https://discord.gg/a6qxs97Gun)
+Your feedback helps us improve StikFlash! Please [submit any issues](https://github.com/0-Blu/StikEMU/issues) or join our [Discord server.](https://discord.gg/a6qxs97Gun)
 
 ---
 
