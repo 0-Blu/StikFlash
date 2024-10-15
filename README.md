@@ -25,14 +25,14 @@ This project is licensed under the **AGPLv3**. You can find the full license tex
 
 ## How to Install
 ### Method 1
+1. Join the [TestFlight](https://testflight.apple.com/join/SZKDtKz8).
+2. Load your Flash games, and enjoy the nostalgia!
+
+### Method 2
 1. Download and install [SideStore.](https://sidestore.io)
 2. Add our source: https://0-blu.github.io/StikFlash/source.json.
 3. Load your Flash games, and enjoy the nostalgia!
-
-### Method 2
-1. Join the [TestFlight](#) (Coming Soon).
-2. Load your Flash games, and enjoy the nostalgia!
-
+   
 ### Method 3 
 1. Download the latest release from the [Releases](https://github.com/0-Blu/StikEMU/releases) section.
 2. Use a Sideloading tool.
