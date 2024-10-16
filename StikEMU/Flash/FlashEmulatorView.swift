@@ -18,7 +18,7 @@ struct FlashEmulatorView: View {
     @State private var controller: GCController?
     @State private var virtualController: GCVirtualController?
     @State private var showingSettings = false
-    @State private var showingHomeViewSheet = false // Renamed for clarity
+    @State private var showingHomeViewSheet = false
     @State private var keyBindings: [String: String] = [
         "space": "Space",
         "buttonB": "KeyB",
@@ -34,9 +34,9 @@ struct FlashEmulatorView: View {
 
     var body: some View {
         ZStack {
-            // Game content (WebView) over the entire screen, including navigation area
+            // WebView covering the entire screen
             WebView(url: URL(string: "http://localhost:\(flashServer.port)")!, webView: $webView)
-                .edgesIgnoringSafeArea(.all) // Makes WebView cover the entire screen including navigation bar
+                .edgesIgnoringSafeArea(.all)
                 .onChange(of: selectedFile) { newFile in
                     if let file = newFile {
                         loadFile(fileURL: file)
@@ -48,7 +48,6 @@ struct FlashEmulatorView: View {
                 Spacer()
 
                 if verticalSizeClass == .regular && showControls {
-                    // UI Controls shown when showControls is true
                     VStack(spacing: 20) {
                         SpaceBarButton(onPress: {
                             pressSpaceBar()
@@ -84,8 +83,14 @@ struct FlashEmulatorView: View {
                             .padding()
                     }
                     .sheet(isPresented: $showingSettings) {
-                        SettingsView(keyBindings: $keyBindings, showControls: $showControls, useDirectionPad: $useDirectionPad, thumbstickMapping: $thumbstickMapping, isPresented: $showingSettings) // Pass the binding to the SettingsView
-                            .background(Color(.systemGroupedBackground))
+                        SettingsView(
+                            keyBindings: $keyBindings,
+                            showControls: $showControls,
+                            useDirectionPad: $useDirectionPad,
+                            thumbstickMapping: $thumbstickMapping,
+                            isPresented: $showingSettings
+                        )
+                        .background(Color(.systemGroupedBackground))
                     }
 
                     Button(action: {
@@ -98,7 +103,7 @@ struct FlashEmulatorView: View {
                     }
                     .sheet(isPresented: $showingHomeViewSheet) {
                         HomeView(selectedFile: $selectedFile, isPresented: $showingHomeViewSheet)
-                            .presentationDetents([.medium, .large]) // Adjust sheet size if needed
+                            .presentationDetents([.medium, .large])
                             .background(Color(.systemGroupedBackground))
                             .cornerRadius(12)
                     }
@@ -144,14 +149,17 @@ struct FlashEmulatorView: View {
         virtualController = GCVirtualController(configuration: virtualConfig)
         virtualController?.connect()
         
-        virtualController?.controller?.extendedGamepad?.valueChangedHandler = { [self] gamepad, element in
+        virtualController?.controller?.extendedGamepad?.valueChangedHandler = { gamepad, element in
             handleGamepadInput(gamepad)
         }
     }
     
+    /// Loads the selected file into the server and reloads the WebView.
     private func loadFile(fileURL: URL) {
-        flashServer.loadFile(fileURL: fileURL)
+        print("FlashEmulatorView: Loading file \(fileURL.path)")
+        flashServer.loadFile(fileURL: fileURL) // Correctly accessing the method
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            print("FlashEmulatorView: Reloading WebView after loading file")
             webView.reload()
         }
     }
@@ -252,35 +260,43 @@ struct FlashEmulatorView: View {
 
     // MARK: - Button Handlers
     private func pressSpaceBar() {
-        sendKeyPress(key: keyBindings["space"]!, keyCode: keyCode(for: keyBindings["space"]!), code: keyBindings["space"]!)
+        guard let key = keyBindings["space"] else { return }
+        sendKeyPress(key: key, keyCode: keyCode(for: key), code: key)
     }
 
     private func releaseSpaceBar() {
-        sendKeyUp(key: keyBindings["space"]!, keyCode: keyCode(for: keyBindings["space"]!), code: keyBindings["space"]!)
+        guard let key = keyBindings["space"] else { return }
+        sendKeyUp(key: key, keyCode: keyCode(for: key), code: key)
     }
 
     private func pressButtonB() {
-        sendKeyPress(key: keyBindings["buttonB"]!, keyCode: keyCode(for: keyBindings["buttonB"]!), code: keyBindings["buttonB"]!)
+        guard let key = keyBindings["buttonB"] else { return }
+        sendKeyPress(key: key, keyCode: keyCode(for: key), code: key)
     }
 
     private func releaseButtonB() {
-        sendKeyUp(key: keyBindings["buttonB"]!, keyCode: keyCode(for: keyBindings["buttonB"]!), code: keyBindings["buttonB"]!)
+        guard let key = keyBindings["buttonB"] else { return }
+        sendKeyUp(key: key, keyCode: keyCode(for: key), code: key)
     }
 
     private func pressButtonX() {
-        sendKeyPress(key: keyBindings["buttonX"]!, keyCode: keyCode(for: keyBindings["buttonX"]!), code: keyBindings["buttonX"]!)
+        guard let key = keyBindings["buttonX"] else { return }
+        sendKeyPress(key: key, keyCode: keyCode(for: key), code: key)
     }
 
     private func releaseButtonX() {
-        sendKeyUp(key: keyBindings["buttonX"]!, keyCode: keyCode(for: keyBindings["buttonX"]!), code: keyBindings["buttonX"]!)
+        guard let key = keyBindings["buttonX"] else { return }
+        sendKeyUp(key: key, keyCode: keyCode(for: key), code: key)
     }
 
     private func pressButtonY() {
-        sendKeyPress(key: keyBindings["buttonY"]!, keyCode: keyCode(for: keyBindings["buttonY"]!), code: keyBindings["buttonY"]!)
+        guard let key = keyBindings["buttonY"] else { return }
+        sendKeyPress(key: key, keyCode: keyCode(for: key), code: key)
     }
 
     private func releaseButtonY() {
-        sendKeyUp(key: keyBindings["buttonY"]!, keyCode: keyCode(for: keyBindings["buttonY"]!), code: keyBindings["buttonY"]!)
+        guard let key = keyBindings["buttonY"] else { return }
+        sendKeyUp(key: key, keyCode: keyCode(for: key), code: key)
     }
 
     // MARK: - JavaScript Injection for Key Events
@@ -299,7 +315,13 @@ struct FlashEmulatorView: View {
         })();
         """
         
-        webView.evaluateJavaScript(jsCode)
+        webView.evaluateJavaScript(jsCode) { result, error in
+            if let error = error {
+                print("Error injecting keydown event: \(error)")
+            } else {
+                print("Injected keydown event for key: \(key)")
+            }
+        }
     }
 
     private func sendKeyUp(key: String, keyCode: Int, code: String) {
@@ -317,7 +339,13 @@ struct FlashEmulatorView: View {
         })();
         """
         
-        webView.evaluateJavaScript(jsCode)
+        webView.evaluateJavaScript(jsCode) { result, error in
+            if let error = error {
+                print("Error injecting keyup event: \(error)")
+            } else {
+                print("Injected keyup event for key: \(key)")
+            }
+        }
     }
 
     // MARK: - KeyCode Mapping Function
@@ -352,7 +380,6 @@ struct FlashEmulatorView: View {
         }
     }
 }
-
 
 // MARK: - Compact SettingsView for Remapping Controls and Switching Input Modes
 struct SettingsView: View {

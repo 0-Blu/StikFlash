@@ -8,6 +8,7 @@
 import Foundation
 import Swifter
 import UniformTypeIdentifiers
+import Combine
 
 // Define GameData struct
 struct GameData: Codable {
@@ -18,34 +19,60 @@ struct GameData: Codable {
 class FlashEmulatorServer: ObservableObject {
     let server = HttpServer()
     private var currentFile: URL? = nil
-    @Published private var savedGameData: GameData? = nil
-    var port: UInt16 = 8080
+    @Published var savedGameData: GameData? = nil {
+        didSet {
+            if let fileURL = currentFile {
+                saveGameData(for: fileURL)
+            }
+        }
+    }
+    var port: UInt16 = 8080 // Fixed port
+    private var cancellables = Set<AnyCancellable>()
     
-    // Key for UserDefaults
-    private let lastSelectedFileKey = "LastSelectedGameFileURL"
+    // File name for saving game data
+    private let gameDataFileName = "GameData.json"
+    
+    // Computed property to get the Documents directory URL
+    private var documentsDirectory: URL {
+        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    }
+    
+    // Computed property for the data directory
+    private var dataDirectory: URL {
+        let dataDir = documentsDirectory.appendingPathComponent("data")
+        if !FileManager.default.fileExists(atPath: dataDir.path) {
+            do {
+                try FileManager.default.createDirectory(at: dataDir, withIntermediateDirectories: true, attributes: nil)
+                print("Created data directory at \(dataDir.path)")
+            } catch {
+                print("Failed to create data directory: \(error)")
+            }
+        }
+        return dataDir
+    }
+    
+    // Computed property for the GameData file URL within the subdirectory
+    private func gameDataFileURL(for fileURL: URL) -> URL {
+        let subDir = subdirectory(for: fileURL)
+        return subDir.appendingPathComponent(gameDataFileName)
+    }
     
     init() {
-        // Randomize the port before setting up routes
-        randomizePort()
+        print("Initializing FlashEmulatorServer on port: \(port)")
         
-        // Attempt to load the last selected game file
+        // Attempt to load the last selected file's data
         if let lastFileURL = retrieveLastSelectedFileURL() {
-            self.loadFile(fileURL: lastFileURL)
-            print("Loaded last selected game file: \(lastFileURL)")
-        } else {
-            // Initialize with default game data if no previous selection exists
-            self.savedGameData = GameData(playerScore: 0, level: 1)
-            print("Initialized with default game data: \(self.savedGameData!)")
+            loadFile(fileURL: lastFileURL)
         }
         
         setupRoutes()
         addLocalhostMiddleware()
     }
-
+    
     deinit {
         stop()
     }
-
+    
     func start() {
         do {
             try server.start(port, forceIPv4: true)
@@ -54,26 +81,98 @@ class FlashEmulatorServer: ObservableObject {
             print("Server start error: \(error)")
         }
     }
-
+    
     func stop() {
         server.stop()
         print("Server has been stopped.")
     }
-
+    
+    // MARK: - File Loading and Saving
+    
+    /// Loads GameData from the specified file's directory. If the file doesn't exist or fails to decode, initializes with default values.
+    func loadGameData(for fileURL: URL) {
+        let fileURLForData = gameDataFileURL(for: fileURL)
+        print("Loading game data from: \(fileURLForData.path)")
+        if FileManager.default.fileExists(atPath: fileURLForData.path) {
+            do {
+                let data = try Data(contentsOf: fileURLForData)
+                let decoder = JSONDecoder()
+                let gameData = try decoder.decode(GameData.self, from: data)
+                self.savedGameData = gameData
+                print("Loaded game data from \(fileURLForData.path): \(gameData)")
+            } catch {
+                print("Failed to load game data from file: \(error). Initializing with default values.")
+                self.savedGameData = GameData(playerScore: 0, level: 1)
+                saveGameData(for: fileURL) // Save default data
+            }
+        } else {
+            // Initialize with default game data if the file doesn't exist
+            self.savedGameData = GameData(playerScore: 0, level: 1)
+            print("Game data file does not exist. Initialized with default game data: \(self.savedGameData!)")
+            saveGameData(for: fileURL) // Create the file with default data
+        }
+    }
+    
+    /// Saves the current GameData to the specified file's directory.
+    func saveGameData(for fileURL: URL) {
+        guard let gameData = savedGameData else {
+            print("No game data to save.")
+            return
+        }
+        
+        let fileURLForData = gameDataFileURL(for: fileURL)
+        print("Saving game data to: \(fileURLForData.path)")
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted // For readability
+            let data = try encoder.encode(gameData)
+            try data.write(to: fileURLForData, options: [.atomicWrite, .completeFileProtection])
+            print("Game data saved to \(fileURLForData.path): \(gameData)")
+        } catch {
+            print("Failed to save game data to file: \(error)")
+        }
+    }
+    
+    /// Loads a specific file into the server and reloads the WebView.
     func loadFile(fileURL: URL) {
+        print("Attempting to load file: \(fileURL.path)")
         currentFile = fileURL
         setupFileRoutes()
         saveLastSelectedFileURL(fileURL)
+        loadGameData(for: fileURL)
+        
+        // Notify observers that a new file has been loaded, if necessary
     }
     
-    // MARK: - Persistence Methods
+    // MARK: - Directory Helpers
     
+    /// Returns the subdirectory for the given file. Creates it if it doesn't exist.
+    private func subdirectory(for fileURL: URL) -> URL {
+        let fileName = fileURL.deletingPathExtension().lastPathComponent
+        let subDir = dataDirectory.appendingPathComponent(fileName)
+        if !FileManager.default.fileExists(atPath: subDir.path) {
+            do {
+                try FileManager.default.createDirectory(at: subDir, withIntermediateDirectories: true, attributes: nil)
+                print("Created subdirectory for \(fileName) at \(subDir.path)")
+            } catch {
+                print("Failed to create subdirectory for \(fileName): \(error)")
+            }
+        }
+        return subDir
+    }
+    
+    // MARK: - Persistence Methods (UserDefaults)
+    
+    private let lastSelectedFileKey = "LastSelectedGameFileURL"
+    
+    /// Saves the last selected file URL to UserDefaults.
     private func saveLastSelectedFileURL(_ fileURL: URL) {
         UserDefaults.standard.set(fileURL.path, forKey: lastSelectedFileKey)
         print("Saved last selected game file URL: \(fileURL.path)")
     }
     
-    private func retrieveLastSelectedFileURL() -> URL? {
+    /// Retrieves the last selected file URL from UserDefaults.
+    func retrieveLastSelectedFileURL() -> URL? {
         if let path = UserDefaults.standard.string(forKey: lastSelectedFileKey) {
             let fileURL = URL(fileURLWithPath: path)
             if FileManager.default.fileExists(atPath: fileURL.path) {
@@ -85,7 +184,10 @@ class FlashEmulatorServer: ObservableObject {
         }
         return nil
     }
-
+    
+    // MARK: - Route Setup
+    
+    /// Sets up all necessary routes for the server.
     private func setupRoutes() {
         server["/"] = { [weak self] request in
             guard let self = self else { return .notFound }
@@ -100,7 +202,8 @@ class FlashEmulatorServer: ObservableObject {
         setupGameDataRoutes()
         setupFileRoutes()
     }
-
+    
+    /// Sets up the route for serving the selected file.
     private func setupFileRoutes() {
         server["/file"] = { [weak self] request in
             guard let self = self, let fileURL = self.currentFile else {
@@ -120,18 +223,20 @@ class FlashEmulatorServer: ObservableObject {
             }
         }
     }
-
+    
+    /// Sets up routes for loading and saving game data.
     private func setupGameDataRoutes() {
         // Load game data (GET request)
         server["/load"] = { [weak self] request in
-            guard let self = self, let savedGameData = self.savedGameData else {
-                print("Error: No game data to load.")
+            guard let self = self, let savedGameData = self.savedGameData, let fileURL = self.currentFile else {
+                print("Error: No game data or current file to load.")
                 return .notFound
             }
-            print("Serving saved game data.")
-
+            print("Serving saved game data for file: \(fileURL.lastPathComponent))")
+            
             do {
                 let encoder = JSONEncoder()
+                encoder.outputFormatting = .prettyPrinted // For readability
                 let jsonData = try encoder.encode(savedGameData)
                 return .raw(200, "application/json", [:], { writer in
                     try writer.write(jsonData)
@@ -141,8 +246,35 @@ class FlashEmulatorServer: ObservableObject {
                 return .internalServerError
             }
         }
+        
+        // Endpoint to update game data (POST request)
+        server.POST["/save"] = { [weak self] request in
+            guard let self = self, let fileURL = self.currentFile else { return .internalServerError }
+            do {
+                let body = request.body // Direct assignment since request.body is non-optional
+                
+                if !body.isEmpty { // Optional: Check if the body is not empty
+                    let decoder = JSONDecoder()
+                    let newGameData = try decoder.decode(GameData.self, from: Data(body))
+                    DispatchQueue.main.async {
+                        self.savedGameData = newGameData
+                    }
+                    print("Received and updated game data for file \(fileURL.lastPathComponent): \(newGameData)")
+                    return .ok(.text("Game data saved successfully."))
+                } else {
+                    print("No body in POST /save request.")
+                    return .badRequest(nil)
+                }
+            } catch {
+                print("Error decoding game data from request: \(error)")
+                return .badRequest(nil)
+            }
+        }
     }
-
+    
+    // MARK: - HTML Generation
+    
+    /// Generates the HTML content for the Flash player.
     private func createFlashHTML() -> String {
         """
         <!DOCTYPE html>
@@ -200,7 +332,6 @@ class FlashEmulatorServer: ObservableObject {
                     const container = document.getElementById("flash-player");
                     container.appendChild(player);
                     player.load("http://localhost:\(port)/file");
-
                     // Function to resize the player to match container's size
                     const resizePlayer = () => {
                         const containerWidth = container.clientWidth;
@@ -209,13 +340,10 @@ class FlashEmulatorServer: ObservableObject {
                         player.style.height = containerHeight + "px";
                         console.log("Resizing player with dimensions:", containerWidth, containerHeight);
                     };
-
                     // Initial resize
                     resizePlayer();
-
                     // Resize when the window size changes
                     window.addEventListener("resize", resizePlayer);
-
                     // Handle player load event
                     player.addEventListener("load", () => {
                         resizePlayer();
@@ -227,9 +355,7 @@ class FlashEmulatorServer: ObservableObject {
                             }
                         });
                     });
-
                     container.focus();
-
                     // Optional: Log key events for debugging
                     document.addEventListener('keydown', function(event) {
                         console.log('Key pressed (keydown):', event.key, event.keyCode, event.code);
@@ -238,7 +364,6 @@ class FlashEmulatorServer: ObservableObject {
                         console.log('Key pressed (keyup):', event.key, event.keyCode, event.code);
                     });
                 });
-
                 function loadGameData() {
                     return fetch("http://localhost:\(port)/load")
                       .then(response => {
@@ -256,7 +381,6 @@ class FlashEmulatorServer: ObservableObject {
                           return null;
                       });
                 }
-
                 function applyGameData(data) {
                     console.log("Attempting to apply game data:", data);
                     const player = document.querySelector('.ruffle-container').shadowRoot.querySelector('canvas');
@@ -276,7 +400,8 @@ class FlashEmulatorServer: ObservableObject {
         </html>
         """
     }
-
+    
+    /// Generates the HTML content for the simple clicker game.
     private func createClickerHTML() -> String {
         """
         <!DOCTYPE html>
@@ -322,7 +447,10 @@ class FlashEmulatorServer: ObservableObject {
         </html>
         """
     }
-
+    
+    // MARK: - Utility Methods
+    
+    /// Determines the MIME type based on the file extension.
     private func mimeType(for pathExtension: String) -> String {
         if let uti = UTType(filenameExtension: pathExtension),
            let mimeType = uti.preferredMIMEType {
@@ -330,19 +458,21 @@ class FlashEmulatorServer: ObservableObject {
         }
         return "application/octet-stream"
     }
-
+    
+    /// Adds middleware to restrict access to localhost only.
     private func addLocalhostMiddleware() {
         server.middleware.append { request in
+            // Check if the request is not from localhost
             if request.address != "127.0.0.1" && request.address != "::1" {
                 print("Blocked request from \(request.address)")
-                return .forbidden
+                
+                // Return a 403 Forbidden response
+                return HttpResponse.raw(403, "Forbidden", ["Content-Type": "text/plain", "Connection": "close"]) { writer in
+                    let message = "403 Forbidden: Access denied"
+                    try writer.write([UInt8](message.utf8))
+                }
             }
-            return nil
+            return nil // Proceed normally for localhost requests
         }
-    }
-
-    private func randomizePort() {
-        port = UInt16.random(in: 8000...9000)
-        print("Server will start on randomized port: \(port)")
     }
 }
