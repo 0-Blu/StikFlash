@@ -410,6 +410,7 @@ struct SettingsView: View {
         .background(Color(.systemGroupedBackground))
         .cornerRadius(12)
         .padding()
+        .preferredColorScheme(.dark) // This forces dark mode
     }
 
     private func binding(for key: String) -> Binding<String> {

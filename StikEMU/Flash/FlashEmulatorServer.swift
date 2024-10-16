@@ -149,11 +149,16 @@ class FlashEmulatorServer: ObservableObject {
         <html>
         <head>
             <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, initial-scale=1.0">
             <style>
-                body, html {
+                /* Reset default margins and paddings */
+                * {
                     margin: 0;
                     padding: 0;
+                    box-sizing: border-box;
+                }
+                /* Ensure the body and html take full height */
+                body, html {
                     height: 100%;
                     width: 100%;
                     background-color: #000;
@@ -162,20 +167,26 @@ class FlashEmulatorServer: ObservableObject {
                     align-items: center;
                     overflow: hidden;
                 }
+                /* Container for the Ruffle player with rounded corners */
                 #flash-player {
-                    width: 100vw;
-                    height: 100vh;
+                    width: 100%;
+                    height: 100%;
                     display: flex;
                     justify-content: center;
                     align-items: center;
                     position: relative;
                     outline: none; /* Remove focus outline */
+                    border-radius: 20px; /* Rounded edges */
+                    overflow: hidden; /* Ensures content respects rounded edges */
                 }
+                /* Ensure the Ruffle player fills the container */
                 #flash-player > .ruffle-container {
                     width: 100%;
                     height: 100%;
-                    transform: scale(1);
-                    transform-origin: top left;
+                    min-width: 100%;
+                    max-width: 100%;
+                    min-height: 100%;
+                    max-height: 100%;
                 }
             </style>
             <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
@@ -190,15 +201,26 @@ class FlashEmulatorServer: ObservableObject {
                     container.appendChild(player);
                     player.load("http://localhost:\(port)/file");
 
-                    player.addEventListener("load", () => {
-                        const fileWidth = player.stage.width;
-                        const fileHeight = player.stage.height;
-                        const scaleX = container.clientWidth / fileWidth;
-                        const scaleY = container.clientHeight / fileHeight;
-                        const scale = Math.min(scaleX, scaleY);
-                        player.style.transform = `scale(${scale})`;
+                    // Function to resize the player to match container's size
+                    const resizePlayer = () => {
+                        const containerWidth = container.clientWidth;
+                        const containerHeight = container.clientHeight;
+                        player.style.width = containerWidth + "px";
+                        player.style.height = containerHeight + "px";
+                        console.log("Resizing player with dimensions:", containerWidth, containerHeight);
+                    };
 
-                        // After the game is loaded, automatically load game data
+                    // Initial resize
+                    resizePlayer();
+
+                    // Resize when the window size changes
+                    window.addEventListener("resize", resizePlayer);
+
+                    // Handle player load event
+                    player.addEventListener("load", () => {
+                        resizePlayer();
+                        console.log("Player loaded, resizing...");
+                        // Automatically load game data after the game is loaded
                         loadGameData().then(data => {
                             if (data) {
                                 applyGameData(data);
@@ -208,13 +230,13 @@ class FlashEmulatorServer: ObservableObject {
 
                     container.focus();
 
+                    // Optional: Log key events for debugging
                     document.addEventListener('keydown', function(event) {
                         console.log('Key pressed (keydown):', event.key, event.keyCode, event.code);
                     });
                     document.addEventListener('keyup', function(event) {
                         console.log('Key pressed (keyup):', event.key, event.keyCode, event.code);
                     });
-
                 });
 
                 function loadGameData() {
@@ -237,6 +259,7 @@ class FlashEmulatorServer: ObservableObject {
 
                 function applyGameData(data) {
                     console.log("Attempting to apply game data:", data);
+                    const player = document.querySelector('.ruffle-container').shadowRoot.querySelector('canvas');
                     if (player && typeof player.setGameData === 'function') {
                         try {
                             player.setGameData(data);
@@ -248,13 +271,12 @@ class FlashEmulatorServer: ObservableObject {
                         console.warn("Player setGameData method not found.");
                     }
                 }
-
             </script>
         </body>
         </html>
         """
     }
-    
+
     private func createClickerHTML() -> String {
         """
         <!DOCTYPE html>
@@ -268,6 +290,8 @@ class FlashEmulatorServer: ObservableObject {
                     font-family: Arial, sans-serif;
                     text-align: center;
                     margin-top: 50px;
+                    background-color: #121212; /* Dark background */
+                    color: #ffffff; /* White text for dark mode */
                 }
                 #clickButton {
                     padding: 20px;
@@ -288,6 +312,7 @@ class FlashEmulatorServer: ObservableObject {
                 #instructions {
                     margin-top: 20px;
                     font-size: 16px;
+                    color: #bbbbbb; /* Lighter gray for instructions */
                 }
             </style>
         </head>

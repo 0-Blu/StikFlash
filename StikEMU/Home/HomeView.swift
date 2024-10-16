@@ -25,7 +25,7 @@ struct HomeView: View {
         NavigationView {
             VStack(spacing: 12) {
                 headerView // Calling the header view
-                gameListView 
+                gameListView
             }
             .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
                 handleFileImport(result: result)
@@ -34,6 +34,7 @@ struct HomeView: View {
             .background(Color(.systemGroupedBackground).ignoresSafeArea())
             .padding()
         }
+        .preferredColorScheme(.dark) // This forces dark mode
     }
 
     // MARK: - Header View
