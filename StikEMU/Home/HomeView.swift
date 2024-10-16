@@ -8,11 +8,12 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+// MARK: - HomeView for Importing Files and Displaying Game List
 struct HomeView: View {
     @State private var showFileImporter = false
     @State private var importedFiles: [URL] = []
     @Binding var selectedFile: URL?
-    @Binding var isPresented: Bool // This binding controls whether the popover is shown
+    @Binding var isPresented: Bool
 
     // Path to save imported files
     private let saveDirectory: URL = {
@@ -21,90 +22,86 @@ struct HomeView: View {
     }()
 
     var body: some View {
-        VStack(spacing: 20) {
-            Text("StikEMU")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-
-            Spacer().frame(height: 20) // Padding
-
-            // Imported Files List
-            if importedFiles.isEmpty {
-                VStack(spacing: 10) {
-                    Image(systemName: "folder.badge.plus")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 50, height: 50)
-                        .foregroundColor(.gray)
-                    Text("No files imported yet.")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                // ScrollView for file list with increased height
-                ScrollView {
-                    VStack(spacing: 1) {
-                        HStack {
-                            Text("Flash Games:")
-                                .fontWeight(.bold)
-                            Spacer()
-                        }
-                        .padding(.horizontal)
-
-                        VStack(spacing: 1) { // Very small spacing to mimic thin dividers
-                            ForEach(importedFiles, id: \.self) { file in
-                                MinimalGameListRow(file: file, isSelected: selectedFile == file)
-                                    .onTapGesture {
-                                        withAnimation {
-                                            selectedFile = file
-                                            isPresented = false // Dismiss the popover when a game is selected
-                                        }
-                                    }
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
-                }
-                .frame(maxHeight: 400) // Adjust this to make the scroll area longer
-                .padding(.horizontal)
+        NavigationView {
+            VStack(spacing: 12) {
+                headerView // Calling the header view
+                gameListView 
             }
-
-            Spacer()
-
-            // Import File Button placed under the imported games
-            Button(action: {
-                withAnimation {
-                    showFileImporter = true
-                }
-            }) {
-                HStack {
-                    Image(systemName: "plus.circle")
-                        .font(.title2)
-                    Text("Import File")
-                        .font(.subheadline)
-                }
-                .foregroundColor(.blue)
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(10)
-            }
-            .padding(.horizontal)
-            .padding(.bottom, 20) // Added padding below the button
-            .fileImporter(
-                isPresented: $showFileImporter,
-                allowedContentTypes: [.item],
-                allowsMultipleSelection: true
-            ) { result in
+            .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
                 handleFileImport(result: result)
             }
+            .onAppear(perform: loadImportedFiles)
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .padding()
         }
-        .onAppear(perform: loadImportedFiles)
-        .frame(minWidth: 300, minHeight: 500) // Adjust the popover's overall size
     }
 
-    // File import handling logic
+    // MARK: - Header View
+    private var headerView: some View {
+        HStack {
+            Text("StikFlash")
+                .font(.system(size: 34, weight: .bold, design: .rounded))
+            Spacer()
+            Button("Import") {
+                showFileImporter = true
+            }
+            Button("Done") {
+                isPresented = false
+            }
+            .padding()
+        }
+        .padding(.vertical, 16)
+        .padding(.horizontal)
+    }
+
+    // MARK: - Game List View
+    private var gameListView: some View {
+        ScrollView {
+            LazyVGrid(columns: gridColumns(for: UIScreen.main.bounds.size), spacing: 16) {
+                ForEach(importedFiles, id: \.self) { file in
+                    GameListTile(file: file, isSelected: selectedFile == file)
+                        .onTapGesture {
+                            withAnimation {
+                                selectedFile = file
+                                isPresented = false // Dismiss the sheet when a game is selected
+                            }
+                        }
+                }
+            }
+            .padding(.vertical, 10)
+        }
+        .frame(maxHeight: UIScreen.main.bounds.height * 0.6)
+    }
+
+    // MARK: - Function to dynamically adjust the number of columns based on screen size
+    private func gridColumns(for size: CGSize) -> [GridItem] {
+        let numberOfColumns: Int
+        if size.width > 1200 {
+            numberOfColumns = 8
+        } else if size.width > 1000 {
+            numberOfColumns = 6
+        } else if size.width > 800 {
+            numberOfColumns = 5
+        } else if size.width > 600 {
+            numberOfColumns = 4
+        } else {
+            numberOfColumns = 3
+        }
+
+        return Array(repeating: GridItem(.flexible(), spacing: 16), count: numberOfColumns)
+    }
+
+    // MARK: - Load Imported Files
+    private func loadImportedFiles() {
+        do {
+            let files = try FileManager.default.contentsOfDirectory(at: saveDirectory, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
+            importedFiles = files
+        } catch {
+            print("Error loading imported files: \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - File Import Handling Logic
     private func handleFileImport(result: Result<[URL], Error>) {
         switch result {
         case .success(let urls):
@@ -125,7 +122,6 @@ struct HomeView: View {
                     } else {
                         print("Failed to access security scoped resource")
                     }
-
                 } catch {
                     print("Error importing file: \(error.localizedDescription)")
                 }
@@ -134,33 +130,37 @@ struct HomeView: View {
             print("Failed to import file: \(error.localizedDescription)")
         }
     }
-
-    // Load imported files
-    private func loadImportedFiles() {
-        do {
-            let files = try FileManager.default.contentsOfDirectory(at: saveDirectory, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
-            importedFiles = files
-        } catch {
-            print("Error loading imported files: \(error.localizedDescription)")
-        }
-    }
 }
 
-struct MinimalGameListRow: View {
+// MARK: - Tile-style view for the game list in a grid layout
+struct GameListTile: View {
     var file: URL
     var isSelected: Bool
 
     var body: some View {
-        HStack {
+        VStack(alignment: .leading, spacing: 8) {
+            Image(systemName: "gamecontroller.fill")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 50, height: 50)
+                .foregroundColor(.secondary)
+
             Text(file.lastPathComponent)
-            Spacer()
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundColor(.primary)
+                .multilineTextAlignment(.leading)
+                .lineLimit(nil)
+                .fixedSize(horizontal: false, vertical: true)
+
             if isSelected {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(.blue)
+                    .padding(.top, 2)
             }
         }
-        .padding()
-        .background(isSelected ? Color.blue.opacity(0.2) : Color.clear)
-        .cornerRadius(8)
+        .frame(maxWidth: .infinity)
+        .padding(8)
+        .background(isSelected ? Color.blue.opacity(0.15) : Color(.systemGray6))
+        .cornerRadius(10)
     }
 }

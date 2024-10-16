@@ -18,7 +18,7 @@ struct FlashEmulatorView: View {
     @State private var controller: GCController?
     @State private var virtualController: GCVirtualController?
     @State private var showingSettings = false
-    @State private var showingHomeViewPopover = false
+    @State private var showingHomeViewSheet = false // Renamed for clarity
     @State private var keyBindings: [String: String] = [
         "space": "Space",
         "buttonB": "KeyB",
@@ -26,97 +26,115 @@ struct FlashEmulatorView: View {
         "buttonY": "KeyY"
     ]
     
-    @State private var thumbstickMapping = "Arrow Keys"  // Default is Arrow Keys
-    @State private var useDirectionPad = false  // Toggle between Thumbstick and D-pad
+    @State private var thumbstickMapping = "Arrow Keys"
+    @State private var useDirectionPad = false
     @State private var showControls = true
     @Environment(\.verticalSizeClass) var verticalSizeClass
-    
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+
     var body: some View {
-        NavigationView {
-            GeometryReader { geometry in
-                VStack(spacing: 0) {
-                    // Game content
-                    WebView(url: URL(string: "http://localhost:\(flashServer.port)")!, webView: $webView)
-                        .frame(width: geometry.size.width, height: verticalSizeClass == .regular ? geometry.size.height * 0.7 : geometry.size.height)
-                        .onChange(of: selectedFile) { newFile in
-                            if let file = newFile {
-                                loadFile(fileURL: file)
-                            }
-                        }
-                    
-                    if verticalSizeClass == .regular && showControls {
-                        Spacer()
-                        // UI Controls shown when showControls is true
-                        VStack(spacing: 20) {
-                            SpaceBarButton(onPress: {
-                                pressSpaceBar()
-                            }, onRelease: {
-                                releaseSpaceBar()
-                            }, spaceKeyBind: keyBindings["space"] ?? "Space")
-                            .frame(width: 120, height: 60)
-                            
-                            // You can add other UI controls here
-                        }
-                        .padding(.bottom, 40)
-                    } else {
-                        Spacer(minLength: 0)
+        ZStack {
+            // Game content (WebView) over the entire screen, including navigation area
+            WebView(url: URL(string: "http://localhost:\(flashServer.port)")!, webView: $webView)
+                .edgesIgnoringSafeArea(.all) // Makes WebView cover the entire screen including navigation bar
+                .onChange(of: selectedFile) { newFile in
+                    if let file = newFile {
+                        loadFile(fileURL: file)
                     }
                 }
-            }
-            .onAppear {
-                flashServer.start()
-                if showControls {
-                    setupVirtualController()
+            
+            // Overlay controls and settings
+            VStack {
+                Spacer()
+
+                if verticalSizeClass == .regular && showControls {
+                    // UI Controls shown when showControls is true
+                    VStack(spacing: 20) {
+                        SpaceBarButton(onPress: {
+                            pressSpaceBar()
+                        }, onRelease: {
+                            releaseSpaceBar()
+                        }, spaceKeyBind: keyBindings["space"] ?? "Space")
+                        .frame(width: 120, height: 60)
+                        .background(Color(.systemBlue))
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                        .shadow(color: Color(.systemBlue).opacity(0.3), radius: 10, x: 0, y: 5)
+                        .padding(.horizontal, 16)
+
+                        // Additional controls can be added here
+                    }
+                    .padding(.bottom, 40)
                 }
+
+                Spacer()
             }
-            .onChange(of: showControls) { newValue in
-                if newValue {
-                    setupVirtualController()
-                } else {
-                    disconnectVirtualController()
-                }
-            }
-            .onChange(of: useDirectionPad) { _ in
-                disconnectVirtualController()
-                setupVirtualController()
-            }
-            .onDisappear {
-                flashServer.stop()
-                releaseSpaceBar()
-                disconnectVirtualController()
-            }
-            .navigationBarItems(
-                trailing: HStack {
+
+            // Settings and HomeView sheet
+            VStack {
+                HStack {
+                    Spacer()
+
                     Button(action: {
-                        showingSettings = true
+                        showingSettings.toggle()
                     }) {
                         Image(systemName: "gearshape.fill")
+                            .foregroundColor(.blue)
+                            .font(.title2)
+                            .padding()
                     }
                     .sheet(isPresented: $showingSettings) {
-                        SettingsView(keyBindings: $keyBindings, showControls: $showControls, useDirectionPad: $useDirectionPad, thumbstickMapping: $thumbstickMapping)
+                        SettingsView(keyBindings: $keyBindings, showControls: $showControls, useDirectionPad: $useDirectionPad, thumbstickMapping: $thumbstickMapping, isPresented: $showingSettings) // Pass the binding to the SettingsView
+                            .background(Color(.systemGroupedBackground))
                     }
 
                     Button(action: {
-                        showingHomeViewPopover = true
+                        showingHomeViewSheet.toggle()
                     }) {
-                        Image(systemName: "plus.circle")
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundColor(.blue)
+                            .font(.title2)
+                            .padding()
                     }
-                    .popover(isPresented: $showingHomeViewPopover) {
-                        HomeView(selectedFile: $selectedFile, isPresented: $showingHomeViewPopover)
-                            .frame(width: 300, height: 400)
+                    .sheet(isPresented: $showingHomeViewSheet) {
+                        HomeView(selectedFile: $selectedFile, isPresented: $showingHomeViewSheet)
+                            .presentationDetents([.medium, .large]) // Adjust sheet size if needed
+                            .background(Color(.systemGroupedBackground))
+                            .cornerRadius(12)
                     }
                 }
-            )
-            .navigationBarHidden(verticalSizeClass == .compact)
+
+                Spacer()
+            }
         }
-        .navigationViewStyle(StackNavigationViewStyle())
+        .onAppear {
+            flashServer.start()
+            if showControls {
+                setupVirtualController()
+            }
+        }
+        .onChange(of: showControls) { newValue in
+            if newValue {
+                setupVirtualController()
+            } else {
+                disconnectVirtualController()
+            }
+        }
+        .onChange(of: useDirectionPad) { _ in
+            disconnectVirtualController()
+            setupVirtualController()
+        }
+        .onDisappear {
+            flashServer.stop()
+            releaseSpaceBar()
+            disconnectVirtualController()
+        }
     }
 
     // MARK: - Virtual Controller Setup
     private func setupVirtualController() {
         let virtualConfig = GCVirtualController.Configuration()
         
-        // Add either Thumbstick or D-pad based on the user selection
         if useDirectionPad {
             virtualConfig.elements = [GCInputDirectionPad, GCInputButtonA, GCInputButtonB, GCInputButtonX, GCInputButtonY]
         } else {
@@ -145,35 +163,30 @@ struct FlashEmulatorView: View {
 
     // MARK: - Handle Gamepad Input
     private func handleGamepadInput(_ gamepad: GCExtendedGamepad) {
-        // Handle Thumbstick or D-pad Input
         if useDirectionPad {
             handleDirectionPad(gamepad.dpad)
         } else {
             handleThumbstick(gamepad.leftThumbstick)
         }
 
-        // Handle Button A (space)
         if gamepad.buttonA.isPressed {
             pressSpaceBar()
         } else {
             releaseSpaceBar()
         }
 
-        // Handle Button B
         if gamepad.buttonB.isPressed {
             pressButtonB()
         } else {
             releaseButtonB()
         }
 
-        // Handle Button X
         if gamepad.buttonX.isPressed {
             pressButtonX()
         } else {
             releaseButtonX()
         }
 
-        // Handle Button Y
         if gamepad.buttonY.isPressed {
             pressButtonY()
         } else {
@@ -182,9 +195,7 @@ struct FlashEmulatorView: View {
     }
 
     private func handleThumbstick(_ thumbstick: GCControllerDirectionPad) {
-        // Map thumbstick to either WASD or Arrow Keys based on user selection
         if thumbstickMapping == "Arrow Keys" {
-            // Map to Arrow Keys
             if thumbstick.up.isPressed {
                 sendKeyPress(key: "ArrowUp", keyCode: 38, code: "ArrowUp")
             } else {
@@ -209,7 +220,6 @@ struct FlashEmulatorView: View {
                 sendKeyUp(key: "ArrowRight", keyCode: 39, code: "ArrowRight")
             }
         } else if thumbstickMapping == "WASD" {
-            // Map to WASD keys
             if thumbstick.up.isPressed {
                 sendKeyPress(key: "w", keyCode: 87, code: "KeyW")
             } else {
@@ -237,8 +247,7 @@ struct FlashEmulatorView: View {
     }
 
     private func handleDirectionPad(_ dpad: GCControllerDirectionPad) {
-        // Handle D-pad input mapped to Arrow Keys
-        handleThumbstick(dpad)  // Reusing the same logic as Thumbstick for Arrow Keys or WASD
+        handleThumbstick(dpad)
     }
 
     // MARK: - Button Handlers
@@ -317,11 +326,11 @@ struct FlashEmulatorView: View {
         case "Space":
             return 32
         case "KeyB":
-            return 66 // ASCII code for 'B'
+            return 66
         case "KeyX":
-            return 88 // ASCII code for 'X'
+            return 88
         case "KeyY":
-            return 89 // ASCII code for 'Y'
+            return 89
         case "ArrowUp":
             return 38
         case "ArrowDown":
@@ -331,82 +340,78 @@ struct FlashEmulatorView: View {
         case "ArrowRight":
             return 39
         case "w":
-            return 87 // ASCII code for 'W'
+            return 87
         case "a":
-            return 65 // ASCII code for 'A'
+            return 65
         case "s":
-            return 83 // ASCII code for 'S'
+            return 83
         case "d":
-            return 68 // ASCII code for 'D'
+            return 68
         default:
             return 0
         }
     }
 }
 
-// MARK: - SettingsView for Remapping Controls and Switching Input Modes
+
+// MARK: - Compact SettingsView for Remapping Controls and Switching Input Modes
 struct SettingsView: View {
     @Binding var keyBindings: [String: String]
     @Binding var showControls: Bool
     @Binding var useDirectionPad: Bool
-    @Binding var thumbstickMapping: String  // New binding for thumbstick mapping options
-    
+    @Binding var thumbstickMapping: String
+    @Binding var isPresented: Bool
+
+    let keyOptions = ["Space", "KeyA", "KeyB", "KeyX", "KeyY", "KeyW", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]
+
     var body: some View {
-        VStack {
-            Text("Settings")
-                .font(.headline)
-                .padding()
-            
-            Toggle(isOn: $showControls) {
-                Text("Show UI Controls")
+        VStack(spacing: 12) {
+            HStack {
+                Text("Settings")
+                    .font(.headline)
+                Spacer()
+                Button("Done") {
+                    isPresented = false
+                }
             }
-            .padding()
+            .padding(.top, 16)
+            .padding(.horizontal)
             
-            Toggle(isOn: $useDirectionPad) {
-                Text("Use Direction Pad instead of Thumbstick")
-            }
-            .padding()
-            
-            Text("Thumbstick Remap")
+            Toggle("Show UI Controls", isOn: $showControls)
+                .padding(.horizontal)
+
+            Toggle("Use Direction Pad", isOn: $useDirectionPad)
+                .padding(.horizontal)
+
             Picker("Thumbstick Mapping", selection: $thumbstickMapping) {
                 Text("Arrow Keys").tag("Arrow Keys")
                 Text("WASD").tag("WASD")
             }
             .pickerStyle(SegmentedPickerStyle())
-            .padding()
+            .padding(.horizontal)
 
-            Group {
+            ForEach(["space", "buttonB", "buttonX", "buttonY"], id: \.self) { key in
                 HStack {
-                    Text("Space:")
-                    TextField("Space", text: binding(for: "space"))
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 150)
+                    Text("\(key.capitalized):")
+                    Spacer()
+                    Picker(selection: binding(for: key), label: Text(keyBindings[key] ?? "")) {
+                        ForEach(keyOptions, id: \.self) { option in
+                            Text(option).tag(option)
+                        }
+                    }
+                    .pickerStyle(MenuPickerStyle())
+                    .frame(width: 150)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(10)
                 }
-                HStack {
-                    Text("Button B:")
-                    TextField("KeyB", text: binding(for: "buttonB"))
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 150)
-                }
-                HStack {
-                    Text("Button X:")
-                    TextField("KeyX", text: binding(for: "buttonX"))
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 150)
-                }
-                HStack {
-                    Text("Button Y:")
-                    TextField("KeyY", text: binding(for: "buttonY"))
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 150)
-                }
+                .padding(.horizontal)
             }
-            
-            Spacer()
         }
+        .background(Color(.systemGroupedBackground))
+        .cornerRadius(12)
         .padding()
     }
-    
+
     private func binding(for key: String) -> Binding<String> {
         Binding<String>(
             get: { keyBindings[key] ?? "" },

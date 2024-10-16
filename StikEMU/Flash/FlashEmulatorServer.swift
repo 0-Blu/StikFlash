@@ -292,55 +292,7 @@ class FlashEmulatorServer: ObservableObject {
             </style>
         </head>
         <body>
-            <h1>Flash Clicker Game</h1>
-            <div id="score">0</div>
-            <button id="clickButton">Click Me!</button>
-
-            <div id="instructions">
-                To import or play other games, hit the "+" button and import your SWF files.
-            </div>
-
-            <script>
-                // Set initial score
-                let score = 0;
-
-                // Get the score element and button element
-                const scoreDisplay = document.getElementById("score");
-                const clickButton = document.getElementById("clickButton");
-
-                // Function to increment the score
-                function incrementScore() {
-                    score++;  // Increase score
-                    scoreDisplay.textContent = score;  // Update score on the page
-                }
-
-                // Add click event to the button (mouse input)
-                clickButton.addEventListener("click", incrementScore);
-
-                // Add keyboard event listener (keyboard input)
-                document.addEventListener("keydown", (event) => {
-                    // List of keys that will increment the score
-                    const validKeys = [
-                        "Space",      // Spacebar
-                        "ArrowUp",    // Arrow keys
-                        "ArrowDown",
-                        "ArrowLeft",
-                        "ArrowRight",
-                        "KeyW",       // WASD keys
-                        "KeyA",
-                        "KeyS",
-                        "KeyD",
-                        "KeyB",       // B, X, Y keys
-                        "KeyX",
-                        "KeyY"
-                    ];
-
-                    // Check if the pressed key is in the validKeys list
-                    if (validKeys.includes(event.code)) {
-                        incrementScore();
-                    }
-                });
-            </script>
+            <h1>Hit the "+" button and import your SWF files.</h1>
         </body>
         </html>
         """
