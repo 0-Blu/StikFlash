@@ -28,3 +28,7 @@
 - The Riddle School Games
 - Minesweeper
 - Learn to Fly
+- Portal
+- Portal 2
+- Rubiks Cube
+- Age of War
