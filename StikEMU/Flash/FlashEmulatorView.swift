@@ -96,7 +96,7 @@ struct FlashEmulatorView: View {
                     Button(action: {
                         showingHomeViewSheet.toggle()
                     }) {
-                        Image(systemName: "plus.circle.fill")
+                        Image(systemName: "house.circle")
                             .foregroundColor(.blue)
                             .font(.title2)
                             .padding()

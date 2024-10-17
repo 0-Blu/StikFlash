@@ -442,7 +442,7 @@ class FlashEmulatorServer: ObservableObject {
             </style>
         </head>
         <body>
-            <h1>Hit the "+" button and import your SWF files.</h1>
+            <h1>Hit the home button and import your SWF files.</h1>
         </body>
         </html>
         """
