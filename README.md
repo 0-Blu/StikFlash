@@ -1,50 +1,39 @@
-# StikFlash - Work in Progress (WIP)
+# StikFlash
 
-Welcome to **StikFlash**, a work-in-progress Flash emulator that runs the **Ruffle Flash emulator** fully on your device! 🎉 With StikFlash, you can relive your favorite Flash games and apps in a secure, fast, and on-device environment.
+Welcome to **StikFlash**, a Flash emulator that runs the **Ruffle Flash emulator** natively on your iOS device! 🎉 With StikFlash, you can relive your favorite Flash games and applications in a secure, fast, and completely on-device environment.
 
-## Notes: 
-- StikFlash does not directly contain any Ruffle code. It utilizes Ruffle as an external library to power Flash emulation on iOS devices. 
-- StikFlash needs an internet connection. Beta 3 should fix this by only requiring an internet connection after the initial install.
-- You cannot sign the ipa with an enterprise cert because the file importer will not work.
-- Make sure low power mode is off. Having it on will greatly reduce performance.
+## Notes
+- **No internet required**: StikFlash no longer requires an internet connection. All operations are performed locally on your device.
+- **Low Power Mode**: Make sure Low Power Mode is turned off to ensure optimal performance.
 
 ## How It Works
-StikFlash runs the Ruffle Flash emulator directly on your iOS device, using a built-in, secure web server. Flash files are pulled/downloaded from [Ruffle's official source](https://unpkg.com/@ruffle-rs/ruffle) to ensure private and seamless gameplay, with all operations happening entirely on your device. Only your device can connect to the web server, which uses a random port each time to increase security. 🔒
+StikFlash runs the Ruffle Flash emulator directly on your iOS device, using a built-in, secure web server. Flash files are loaded from local storage, keeping all operations private and entirely on your device. This ensures external access is blocked and your gameplay remains seamless and protected. 🔒
 
 ## Compatibility
-See the `Compatibility.md` file.
+Refer to the `Compatibility.md` file for detailed information on supported devices and games.
 
-## Discord
-You can join our Discord server [here.](https://discord.gg/a6qxs97Gun)
+## Discord Community
+Join our Discord server for support, updates, and discussions! [Click here to join.](https://discord.gg/a6qxs97Gun)
 
 ## Contributors
-Credit to **nythepegasus** for adding xcconfigs.
+- Credit to **nythepegasus** for adding xcconfig files.
 
 ## Credits
-- **App Code:** Me.
-- **Flash Code:** [Ruffle](https://ruffle.rs).
+- **App Development:** Me.
+- **Flash Emulation Powered By:** [Ruffle](https://ruffle.rs).
 
 ## License
 This project is licensed under the **AGPLv3**. You can find the full license text in the `LICENSE` file.
 
 ## How to Install
-### Method 1
-1. Join the [TestFlight](https://testflight.apple.com/join/SZKDtKz8).
-2. Load your Flash games, and enjoy the nostalgia!
 
-### Method 2
-1. Download and install [SideStore.](https://sidestore.io)
-2. Add our source: https://0-blu.github.io/StikFlash/source.json.
-3. Load your Flash games, and enjoy the nostalgia!
-   
-### Method 3 
-1. Download the latest release from the [Releases](https://github.com/0-Blu/StikEMU/releases) section.
-2. Use a Sideloading tool.
+### TestFlight
+1. **Join the StikFlash TestFlight beta** by clicking [here](https://testflight.apple.com/join/SZKDtKz8).
+2. **Download and install** the app through TestFlight.
 3. Load your Flash games, and enjoy the nostalgia!
 
-
-## Feedback
-Your feedback helps us improve StikFlash! Please [submit any issues](https://github.com/0-Blu/StikEMU/issues) or join our [Discord server.](https://discord.gg/a6qxs97Gun)
+## Feedback & Issues
+Your feedback helps improve StikFlash! Please [submit any issues](https://github.com/0-Blu/StikEMU/issues) on GitHub or join our [Discord server](https://discord.gg/a6qxs97Gun) to report bugs or give suggestions.
 
 ---
 
