@@ -19,6 +19,12 @@ struct FlashEmulatorView: View {
     @State private var virtualController: GCVirtualController?
     @State private var showingSettings = false
     @State private var showingHomeViewSheet = false
+    
+    // Use @AppStorage for simple settings
+    @AppStorage("showControls") private var showControls = true
+    @AppStorage("useDirectionPad") private var useDirectionPad = false
+    @AppStorage("thumbstickMapping") private var thumbstickMapping = "Arrow Keys"
+    
     @State private var keyBindings: [String: String] = [
         "space": "Space",
         "buttonB": "KeyB",
@@ -26,9 +32,6 @@ struct FlashEmulatorView: View {
         "buttonY": "KeyY"
     ]
     
-    @State private var thumbstickMapping = "Arrow Keys"
-    @State private var useDirectionPad = false
-    @State private var showControls = true
     @Environment(\.verticalSizeClass) var verticalSizeClass
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
 
@@ -109,9 +112,13 @@ struct FlashEmulatorView: View {
         }
         .onAppear {
             flashServer.start()
+            loadKeyBindings() // Load keyBindings when the view appears
             if showControls {
                 setupVirtualController()
             }
+        }
+        .onChange(of: keyBindings) { _ in
+            saveKeyBindings() // Save keyBindings whenever they change
         }
         .onChange(of: showControls) { newValue in
             if newValue {
@@ -128,6 +135,21 @@ struct FlashEmulatorView: View {
             flashServer.stop()
             releaseSpaceBar()
             disconnectVirtualController()
+            saveKeyBindings() // Save keyBindings when the view disappears
+        }
+    }
+
+    // MARK: - Save and Load Key Bindings
+    private func saveKeyBindings() {
+        if let data = try? JSONEncoder().encode(keyBindings) {
+            UserDefaults.standard.set(data, forKey: "keyBindings")
+        }
+    }
+
+    private func loadKeyBindings() {
+        if let data = UserDefaults.standard.data(forKey: "keyBindings"),
+           let decoded = try? JSONDecoder().decode([String: String].self, from: data) {
+            keyBindings = decoded
         }
     }
 
@@ -152,7 +174,7 @@ struct FlashEmulatorView: View {
     /// Loads the selected file into the server and reloads the WebView.
     private func loadFile(fileURL: URL) {
         print("FlashEmulatorView: Loading file \(fileURL.path)")
-        flashServer.loadFile(fileURL: fileURL) // Correctly accessing the method
+        flashServer.loadFile(fileURL: fileURL)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             print("FlashEmulatorView: Reloading WebView after loading file")
             webView.reload()
@@ -348,12 +370,20 @@ struct FlashEmulatorView: View {
         switch key {
         case "Space":
             return 32
+        case "KeyA":
+            return 65
         case "KeyB":
             return 66
         case "KeyX":
             return 88
         case "KeyY":
             return 89
+        case "KeyW":
+            return 87
+        case "KeyS":
+            return 83
+        case "KeyD":
+            return 68
         case "ArrowUp":
             return 38
         case "ArrowDown":
@@ -376,7 +406,7 @@ struct FlashEmulatorView: View {
     }
 }
 
-// MARK: - Compact SettingsView for Remapping Controls and Switching Input Modes
+// MARK: - SettingsView
 struct SettingsView: View {
     @Binding var keyBindings: [String: String]
     @Binding var showControls: Bool
@@ -384,17 +414,30 @@ struct SettingsView: View {
     @Binding var thumbstickMapping: String
     @Binding var isPresented: Bool
 
+    @State private var showResetConfirmation = false // Added state for alert
+
     let keyOptions = ["Space", "KeyA", "KeyB", "KeyX", "KeyY", "KeyW", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]
 
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
-                // Header and Done button
+                // Header with Settings Title, Done Button, and Reset Button
                 HStack {
                     Text("Settings")
                         .font(.title2)
                         .bold()
                     Spacer()
+                    // Reset Button
+                    Button(action: {
+                        showResetConfirmation = true // Show confirmation alert
+                    }) {
+                        Text("Reset")
+                            .font(.headline)
+                            .foregroundColor(.red)
+                    }
+                    .padding(.trailing, 10)
+
+                    // Done Button
                     Button(action: {
                         isPresented = false
                     }) {
@@ -405,7 +448,18 @@ struct SettingsView: View {
                 }
                 .padding(.horizontal)
                 .padding(.top, 20)
-                
+                .alert(isPresented: $showResetConfirmation) {
+                    Alert(
+                        title: Text("Reset Settings"),
+                        message: Text("Are you sure you want to reset all settings to their default values?"),
+                        primaryButton: .destructive(Text("Reset")) {
+                            resetSettings()
+                        },
+                        secondaryButton: .cancel()
+                    )
+                }
+
+                // Rest of the settings UI
                 Toggle("Show UI Controls", isOn: $showControls)
                     .padding(.horizontal)
 
@@ -449,7 +503,7 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("App made by Stephen")
                         .font(.subheadline)
-                    
+
                     Text("Flash code by Ruffle")
                         .font(.subheadline)
                 }
@@ -465,6 +519,19 @@ struct SettingsView: View {
         .preferredColorScheme(.dark) // This forces dark mode
     }
 
+    private func resetSettings() {
+        // Reset the settings to default values
+        keyBindings = [
+            "space": "Space",
+            "buttonB": "KeyB",
+            "buttonX": "KeyX",
+            "buttonY": "KeyY"
+        ]
+        showControls = true
+        useDirectionPad = false
+        thumbstickMapping = "Arrow Keys"
+    }
+
     private func binding(for key: String) -> Binding<String> {
         Binding<String>(
             get: { keyBindings[key] ?? "" },
@@ -472,4 +539,3 @@ struct SettingsView: View {
         )
     }
 }
-
