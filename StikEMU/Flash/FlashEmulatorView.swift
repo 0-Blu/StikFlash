@@ -10,37 +10,15 @@ import WebKit
 import Combine
 import GameController
 
-// Helper Functions for Encoding/Decoding Dictionary
-func encodeToJSON(_ dictionary: [String: String]) -> String {
-    if let jsonData = try? JSONEncoder().encode(dictionary),
-       let jsonString = String(data: jsonData, encoding: .utf8) {
-        return jsonString
-    }
-    return "{}" // Default to empty JSON object if encoding fails
-}
-
-func decodeFromJSON(_ jsonString: String) -> [String: String] {
-    if let jsonData = jsonString.data(using: .utf8),
-       let dictionary = try? JSONDecoder().decode([String: String].self, from: jsonData) {
-        return dictionary
-    }
-    return [:] // Default to empty dictionary if decoding fails
-}
-
 struct FlashEmulatorView: View {
     @StateObject private var flashServer = FlashEmulatorServer()
     @State private var webView = WKWebView()
     @Binding var selectedFile: URL?
-
+    
     @State private var controller: GCController?
     @State private var virtualController: GCVirtualController?
     @State private var showingSettings = false
     @State private var showingHomeViewSheet = false
-    
-    // Use AppStorage to persist JSON string of keyBindings
-    @AppStorage("keyBindingsJSON") private var keyBindingsJSON: String = "{}"
-    
-    // Store actual keyBindings in State
     @State private var keyBindings: [String: String] = [
         "space": "Space",
         "buttonB": "KeyB",
@@ -48,16 +26,14 @@ struct FlashEmulatorView: View {
         "buttonY": "KeyY"
     ]
     
-    @AppStorage("thumbstickMapping") private var thumbstickMapping = "Arrow Keys"
-    @AppStorage("useDirectionPad") private var useDirectionPad = false
-    @AppStorage("showControls") private var showControls = true
-
+    @State private var thumbstickMapping = "Arrow Keys"
+    @State private var useDirectionPad = false
+    @State private var showControls = true
     @Environment(\.verticalSizeClass) var verticalSizeClass
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
 
     var body: some View {
         ZStack {
-            // WebView covering the entire screen
             WebView(url: URL(string: "http://localhost:\(flashServer.port)")!, webView: $webView)
                 .edgesIgnoringSafeArea(.all)
                 .onChange(of: selectedFile) { newFile in
@@ -66,7 +42,6 @@ struct FlashEmulatorView: View {
                     }
                 }
             
-            // Overlay controls and settings
             VStack {
                 Spacer()
 
@@ -83,8 +58,6 @@ struct FlashEmulatorView: View {
                         .cornerRadius(10)
                         .shadow(color: Color(.systemBlue).opacity(0.3), radius: 10, x: 0, y: 5)
                         .padding(.horizontal, 16)
-
-                        // Additional controls can be added here
                     }
                     .padding(.bottom, 40)
                 }
@@ -92,7 +65,6 @@ struct FlashEmulatorView: View {
                 Spacer()
             }
 
-            // Settings and HomeView sheet
             VStack {
                 HStack {
                     Spacer()
@@ -137,17 +109,9 @@ struct FlashEmulatorView: View {
         }
         .onAppear {
             flashServer.start()
-            
-            // Decode JSON into keyBindings when the view appears
-            keyBindings = decodeFromJSON(keyBindingsJSON)
-            
             if showControls {
                 setupVirtualController()
             }
-        }
-        .onChange(of: keyBindings) { newBindings in
-            // Encode keyBindings into JSON when it changes
-            keyBindingsJSON = encodeToJSON(newBindings)
         }
         .onChange(of: showControls) { newValue in
             if newValue {
@@ -188,8 +152,7 @@ struct FlashEmulatorView: View {
     /// Loads the selected file into the server and reloads the WebView.
     private func loadFile(fileURL: URL) {
         print("FlashEmulatorView: Loading file \(fileURL.path)")
-        // Use the correct method to load the file into the flashServer
-        flashServer.loadFile(fileURL: URL(fileURLWithPath: fileURL.path))
+        flashServer.loadFile(fileURL: fileURL) // Correctly accessing the method
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             print("FlashEmulatorView: Reloading WebView after loading file")
             webView.reload()
@@ -426,26 +389,23 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
-                // Header
+                // Header and Done button
                 HStack {
                     Text("Settings")
-                        .font(.headline)
+                        .font(.title2)
+                        .bold()
                     Spacer()
-                    Button("Done") {
+                    Button(action: {
                         isPresented = false
+                    }) {
+                        Text("Done")
+                            .font(.headline)
+                            .foregroundColor(.blue)
                     }
                 }
-                .padding(.top, 16)
                 .padding(.horizontal)
-
-                // Section Header for Control Settings
-                Text("Control Settings")
-                    .font(.title2)
-                    .bold()
-                    .padding(.horizontal)
-                    .padding(.top, 10)
-
-                // Toggles and Pickers
+                .padding(.top, 20)
+                
                 Toggle("Show UI Controls", isOn: $showControls)
                     .padding(.horizontal)
 
@@ -459,7 +419,7 @@ struct SettingsView: View {
                 .pickerStyle(SegmentedPickerStyle())
                 .padding(.horizontal)
 
-                ForEach(["A Button", "B Button", "X Button", "Y Button"], id: \.self) { key in
+                ForEach(["space", "buttonB", "buttonX", "buttonY"], id: \.self) { key in
                     HStack {
                         Text("\(key.capitalized):")
                         Spacer()
@@ -476,22 +436,22 @@ struct SettingsView: View {
                     .padding(.horizontal)
                 }
 
-                // Section Header for Credits
-                Text("Credits")
-                    .font(.title2)
-                    .bold()
-                    .padding(.horizontal)
-                    .padding(.top, 20)
-
                 // Credits Section
+                HStack {
+                    Text("Credits")
+                        .font(.title2)
+                        .bold()
+                    Spacer()
+                }
+                .padding(.horizontal)
+                .padding(.top, 20)
+
                 VStack(alignment: .leading, spacing: 8) {
                     Text("App made by Stephen")
                         .font(.subheadline)
-                        .padding(.horizontal)
                     
                     Text("Flash code by Ruffle")
                         .font(.subheadline)
-                        .padding(.horizontal)
                 }
                 .padding(.vertical, 10)
                 .background(Color(.systemGray6))
@@ -501,8 +461,8 @@ struct SettingsView: View {
             .background(Color(.systemGroupedBackground))
             .cornerRadius(12)
             .padding()
-            .preferredColorScheme(.dark) // This forces dark mode
         }
+        .preferredColorScheme(.dark) // This forces dark mode
     }
 
     private func binding(for key: String) -> Binding<String> {
@@ -512,3 +472,4 @@ struct SettingsView: View {
         )
     }
 }
+
