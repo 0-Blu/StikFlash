@@ -32,6 +32,18 @@ class FlashEmulatorServer: ObservableObject {
     // File name for saving game data
     private let gameDataFileName = "GameData.json"
     
+    // Ruffle asset filenames
+    let ruffleAssets = [
+        "core.ruffle.3334b93f92b5c7b428f2.js",
+        "core.ruffle.3334b93f92b5c7b428f2.js.map",
+        "core.ruffle.e7a3e81b90a33d85f1a7.js",
+        "core.ruffle.e7a3e81b90a33d85f1a7.js.map",
+        "e706bb3071547287dd75.wasm",
+        "f14cd019745b826d8724.wasm",
+        "ruffle.js",
+        "ruffle.js.map"
+    ]
+    
     // Computed property to get the Documents directory URL
     private var documentsDirectory: URL {
         return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
@@ -44,13 +56,30 @@ class FlashEmulatorServer: ObservableObject {
             do {
                 try FileManager.default.createDirectory(at: dataDir, withIntermediateDirectories: true, attributes: nil)
                 print("Created data directory at \(dataDir.path)")
+                hideDirectory(dataDir) // Hide the directory after creation
             } catch {
                 print("Failed to create data directory: \(error)")
             }
+        } else {
+            // Ensure the directory remains hidden even if it already exists
+            hideDirectory(dataDir)
         }
         return dataDir
     }
-    
+
+    // Method to hide a directory
+    private func hideDirectory(_ url: URL) {
+        do {
+            var url = url // Make it a mutable variable
+            var resourceValues = URLResourceValues()
+            resourceValues.isHidden = true
+            try url.setResourceValues(resourceValues)
+            print("Directory \(url.path) is now hidden.")
+        } catch {
+            print("Failed to hide directory: \(error)")
+        }
+    }
+
     // Computed property for the GameData file URL within the subdirectory
     private func gameDataFileURL(for fileURL: URL) -> URL {
         let subDir = subdirectory(for: fileURL)
@@ -140,8 +169,6 @@ class FlashEmulatorServer: ObservableObject {
         setupFileRoutes()
         saveLastSelectedFileURL(fileURL)
         loadGameData(for: fileURL)
-        
-        // Notify observers that a new file has been loaded, if necessary
     }
     
     // MARK: - Directory Helpers
@@ -201,25 +228,43 @@ class FlashEmulatorServer: ObservableObject {
         }
         setupGameDataRoutes()
         setupFileRoutes()
+        setupRuffleRoutes() // Add route to serve Ruffle assets
     }
     
     /// Sets up the route for serving the selected file.
     private func setupFileRoutes() {
         server["/file"] = { [weak self] request in
             guard let self = self, let fileURL = self.currentFile else {
-                print("Error: File URL is nil or invalid.")
                 return .notFound
             }
             do {
                 let fileData = try Data(contentsOf: fileURL)
                 let mimeType = self.mimeType(for: fileURL.pathExtension)
-                print("Serving file: \(fileURL.lastPathComponent)")
                 return .raw(200, mimeType, [:], { writer in
                     try writer.write(fileData)
                 })
             } catch {
-                print("Error loading file: \(error.localizedDescription)")
                 return .notFound
+            }
+        }
+    }
+    
+    /// Sets up routes to serve Ruffle assets (JS, WASM).
+    private func setupRuffleRoutes() {
+        for asset in ruffleAssets {
+            server["/\(asset)"] = { request in
+                guard let path = Bundle.main.path(forResource: asset, ofType: nil) else {
+                    return .notFound
+                }
+                do {
+                    let fileData = try Data(contentsOf: URL(fileURLWithPath: path))
+                    let mimeType = self.mimeType(for: (asset as NSString).pathExtension)
+                    return .raw(200, mimeType, [:], { writer in
+                        try writer.write(fileData)
+                    })
+                } catch {
+                    return .notFound
+                }
             }
         }
     }
@@ -229,44 +274,38 @@ class FlashEmulatorServer: ObservableObject {
         // Load game data (GET request)
         server["/load"] = { [weak self] request in
             guard let self = self, let savedGameData = self.savedGameData, let fileURL = self.currentFile else {
-                print("Error: No game data or current file to load.")
                 return .notFound
             }
-            print("Serving saved game data for file: \(fileURL.lastPathComponent))")
-            
             do {
                 let encoder = JSONEncoder()
-                encoder.outputFormatting = .prettyPrinted // For readability
+                encoder.outputFormatting = .prettyPrinted
                 let jsonData = try encoder.encode(savedGameData)
                 return .raw(200, "application/json", [:], { writer in
                     try writer.write(jsonData)
                 })
             } catch {
-                print("Error encoding game data: \(error)")
                 return .internalServerError
             }
         }
         
         // Endpoint to update game data (POST request)
         server.POST["/save"] = { [weak self] request in
-            guard let self = self, let fileURL = self.currentFile else { return .internalServerError }
+            guard let self = self, let fileURL = self.currentFile else {
+                return .internalServerError
+            }
             do {
-                let body = request.body // Direct assignment since request.body is non-optional
-                
-                if !body.isEmpty { // Optional: Check if the body is not empty
+                let body = request.body
+                if !body.isEmpty {
                     let decoder = JSONDecoder()
                     let newGameData = try decoder.decode(GameData.self, from: Data(body))
                     DispatchQueue.main.async {
                         self.savedGameData = newGameData
                     }
-                    print("Received and updated game data for file \(fileURL.lastPathComponent): \(newGameData)")
                     return .ok(.text("Game data saved successfully."))
                 } else {
-                    print("No body in POST /save request.")
                     return .badRequest(nil)
                 }
             } catch {
-                print("Error decoding game data from request: \(error)")
                 return .badRequest(nil)
             }
         }
@@ -274,7 +313,6 @@ class FlashEmulatorServer: ObservableObject {
     
     // MARK: - HTML Generation
     
-    /// Generates the HTML content for the Flash player.
     private func createFlashHTML() -> String {
         """
         <!DOCTYPE html>
@@ -321,7 +359,7 @@ class FlashEmulatorServer: ObservableObject {
                     max-height: 100%;
                 }
             </style>
-            <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+            <script src="/ruffle.js"></script>
         </head>
         <body>
             <div id="flash-player" tabindex="0"></div>
@@ -401,7 +439,6 @@ class FlashEmulatorServer: ObservableObject {
         """
     }
     
-    /// Generates the HTML content for the simple clicker game.
     private func createClickerHTML() -> String {
         """
         <!DOCTYPE html>
@@ -412,32 +449,10 @@ class FlashEmulatorServer: ObservableObject {
             <title>Flash Clicker Game</title>
             <style>
                 body {
-                    font-family: Arial, sans-serif;
                     text-align: center;
                     margin-top: 50px;
-                    background-color: #121212; /* Dark background */
-                    color: #ffffff; /* White text for dark mode */
-                }
-                #clickButton {
-                    padding: 20px;
-                    font-size: 24px;
-                    background-color: #4CAF50;
-                    color: white;
-                    border: none;
-                    cursor: pointer;
-                    border-radius: 10px;
-                }
-                #clickButton:hover {
-                    background-color: #45a049;
-                }
-                #score {
-                    font-size: 48px;
-                    margin: 20px 0;
-                }
-                #instructions {
-                    margin-top: 20px;
-                    font-size: 16px;
-                    color: #bbbbbb; /* Lighter gray for instructions */
+                    background-color: #121212;
+                    color: #ffffff;
                 }
             </style>
         </head>
@@ -450,16 +465,19 @@ class FlashEmulatorServer: ObservableObject {
     
     // MARK: - Utility Methods
     
-    /// Determines the MIME type based on the file extension.
     private func mimeType(for pathExtension: String) -> String {
-        if let uti = UTType(filenameExtension: pathExtension),
-           let mimeType = uti.preferredMIMEType {
-            return mimeType
+        switch pathExtension {
+        case "js":
+            return "application/javascript"
+        case "wasm":
+            return "application/wasm"
+        case "json":
+            return "application/json"
+        default:
+            return "application/octet-stream"
         }
-        return "application/octet-stream"
     }
     
-    /// Adds middleware to restrict access to localhost only.
     private func addLocalhostMiddleware() {
         server.middleware.append { request in
             // Check if the request is not from localhost

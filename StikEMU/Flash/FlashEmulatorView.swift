@@ -10,15 +10,37 @@ import WebKit
 import Combine
 import GameController
 
+// Helper Functions for Encoding/Decoding Dictionary
+func encodeToJSON(_ dictionary: [String: String]) -> String {
+    if let jsonData = try? JSONEncoder().encode(dictionary),
+       let jsonString = String(data: jsonData, encoding: .utf8) {
+        return jsonString
+    }
+    return "{}" // Default to empty JSON object if encoding fails
+}
+
+func decodeFromJSON(_ jsonString: String) -> [String: String] {
+    if let jsonData = jsonString.data(using: .utf8),
+       let dictionary = try? JSONDecoder().decode([String: String].self, from: jsonData) {
+        return dictionary
+    }
+    return [:] // Default to empty dictionary if decoding fails
+}
+
 struct FlashEmulatorView: View {
     @StateObject private var flashServer = FlashEmulatorServer()
     @State private var webView = WKWebView()
     @Binding var selectedFile: URL?
-    
+
     @State private var controller: GCController?
     @State private var virtualController: GCVirtualController?
     @State private var showingSettings = false
     @State private var showingHomeViewSheet = false
+    
+    // Use AppStorage to persist JSON string of keyBindings
+    @AppStorage("keyBindingsJSON") private var keyBindingsJSON: String = "{}"
+    
+    // Store actual keyBindings in State
     @State private var keyBindings: [String: String] = [
         "space": "Space",
         "buttonB": "KeyB",
@@ -26,9 +48,10 @@ struct FlashEmulatorView: View {
         "buttonY": "KeyY"
     ]
     
-    @State private var thumbstickMapping = "Arrow Keys"
-    @State private var useDirectionPad = false
-    @State private var showControls = true
+    @AppStorage("thumbstickMapping") private var thumbstickMapping = "Arrow Keys"
+    @AppStorage("useDirectionPad") private var useDirectionPad = false
+    @AppStorage("showControls") private var showControls = true
+
     @Environment(\.verticalSizeClass) var verticalSizeClass
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
 
@@ -96,7 +119,7 @@ struct FlashEmulatorView: View {
                     Button(action: {
                         showingHomeViewSheet.toggle()
                     }) {
-                        Image(systemName: "house.circle")
+                        Image(systemName: "house.fill")
                             .foregroundColor(.blue)
                             .font(.title2)
                             .padding()
@@ -114,9 +137,17 @@ struct FlashEmulatorView: View {
         }
         .onAppear {
             flashServer.start()
+            
+            // Decode JSON into keyBindings when the view appears
+            keyBindings = decodeFromJSON(keyBindingsJSON)
+            
             if showControls {
                 setupVirtualController()
             }
+        }
+        .onChange(of: keyBindings) { newBindings in
+            // Encode keyBindings into JSON when it changes
+            keyBindingsJSON = encodeToJSON(newBindings)
         }
         .onChange(of: showControls) { newValue in
             if newValue {
@@ -157,7 +188,8 @@ struct FlashEmulatorView: View {
     /// Loads the selected file into the server and reloads the WebView.
     private func loadFile(fileURL: URL) {
         print("FlashEmulatorView: Loading file \(fileURL.path)")
-        flashServer.loadFile(fileURL: fileURL) // Correctly accessing the method
+        // Use the correct method to load the file into the flashServer
+        flashServer.loadFile(fileURL: URL(fileURLWithPath: fileURL.path))
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             print("FlashEmulatorView: Reloading WebView after loading file")
             webView.reload()
@@ -392,52 +424,85 @@ struct SettingsView: View {
     let keyOptions = ["Space", "KeyA", "KeyB", "KeyX", "KeyY", "KeyW", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]
 
     var body: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("Settings")
-                    .font(.headline)
-                Spacer()
-                Button("Done") {
-                    isPresented = false
-                }
-            }
-            .padding(.top, 16)
-            .padding(.horizontal)
-            
-            Toggle("Show UI Controls", isOn: $showControls)
-                .padding(.horizontal)
-
-            Toggle("Use Direction Pad", isOn: $useDirectionPad)
-                .padding(.horizontal)
-
-            Picker("Thumbstick Mapping", selection: $thumbstickMapping) {
-                Text("Arrow Keys").tag("Arrow Keys")
-                Text("WASD").tag("WASD")
-            }
-            .pickerStyle(SegmentedPickerStyle())
-            .padding(.horizontal)
-
-            ForEach(["space", "buttonB", "buttonX", "buttonY"], id: \.self) { key in
+        ScrollView {
+            VStack(spacing: 12) {
+                // Header
                 HStack {
-                    Text("\(key.capitalized):")
+                    Text("Settings")
+                        .font(.headline)
                     Spacer()
-                    Picker(selection: binding(for: key), label: Text(keyBindings[key] ?? "")) {
-                        ForEach(keyOptions, id: \.self) { option in
-                            Text(option).tag(option)
-                        }
+                    Button("Done") {
+                        isPresented = false
                     }
-                    .pickerStyle(MenuPickerStyle())
-                    .frame(width: 150)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(10)
                 }
+                .padding(.top, 16)
+                .padding(.horizontal)
+
+                // Section Header for Control Settings
+                Text("Control Settings")
+                    .font(.title2)
+                    .bold()
+                    .padding(.horizontal)
+                    .padding(.top, 10)
+
+                // Toggles and Pickers
+                Toggle("Show UI Controls", isOn: $showControls)
+                    .padding(.horizontal)
+
+                Toggle("Use Direction Pad", isOn: $useDirectionPad)
+                    .padding(.horizontal)
+
+                Picker("Thumbstick Mapping", selection: $thumbstickMapping) {
+                    Text("Arrow Keys").tag("Arrow Keys")
+                    Text("WASD").tag("WASD")
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .padding(.horizontal)
+
+                ForEach(["A Button", "B Button", "X Button", "Y Button"], id: \.self) { key in
+                    HStack {
+                        Text("\(key.capitalized):")
+                        Spacer()
+                        Picker(selection: binding(for: key), label: Text(keyBindings[key] ?? "")) {
+                            ForEach(keyOptions, id: \.self) { option in
+                                Text(option).tag(option)
+                            }
+                        }
+                        .pickerStyle(MenuPickerStyle())
+                        .frame(width: 150)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(10)
+                    }
+                    .padding(.horizontal)
+                }
+
+                // Section Header for Credits
+                Text("Credits")
+                    .font(.title2)
+                    .bold()
+                    .padding(.horizontal)
+                    .padding(.top, 20)
+
+                // Credits Section
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("App made by Stephen")
+                        .font(.subheadline)
+                        .padding(.horizontal)
+                    
+                    Text("Flash code by Ruffle")
+                        .font(.subheadline)
+                        .padding(.horizontal)
+                }
+                .padding(.vertical, 10)
+                .background(Color(.systemGray6))
+                .cornerRadius(10)
                 .padding(.horizontal)
             }
+            .background(Color(.systemGroupedBackground))
+            .cornerRadius(12)
+            .padding()
+            .preferredColorScheme(.dark) // This forces dark mode
         }
-        .background(Color(.systemGroupedBackground))
-        .cornerRadius(12)
-        .padding()
-        .preferredColorScheme(.dark) // This forces dark mode
     }
 
     private func binding(for key: String) -> Binding<String> {
