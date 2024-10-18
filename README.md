@@ -21,8 +21,8 @@ You can join our Discord server [here.](https://discord.gg/a6qxs97Gun)
 Credit to **nythepegasus** for adding xcconfigs.
 
 ## Credits
-**App Code:** Me.
-**Flash Code:** [Ruffle](https://ruffle.rs)
+- **App Code:** Me.
+- **Flash Code:** [Ruffle](https://ruffle.rs).
 
 ## License
 This project is licensed under the **AGPLv3**. You can find the full license text in the `LICENSE` file.
